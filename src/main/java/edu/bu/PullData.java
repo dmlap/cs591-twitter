@@ -1,8 +1,9 @@
 package edu.bu;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.OutputStream;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -48,25 +49,27 @@ public class PullData {
 			.toString();
 	}
 	
-	public byte[] pull() throws ClientProtocolException, IOException {
+	public void pull(final OutputStream outstream) throws ClientProtocolException, IOException {
 		HttpClient httpClient = new DefaultHttpClient();
 		for (int i = 0; i < PAGE_COUNT; ++i) {
-			httpClient.execute(new HttpGet(apply(USER_TIMELINE_XML,
+			DataAccess.writeByteArray(httpClient.execute(new HttpGet(apply(USER_TIMELINE_XML,
 					username, i)), new ResponseHandler<byte[]>() {
-				@Override
-				public byte[] handleResponse(HttpResponse response)
-						throws ClientProtocolException, IOException {
-					return EntityUtils.toByteArray(response.getEntity());
-				}
-			});
+						@Override
+						public byte[] handleResponse(HttpResponse response)
+								throws ClientProtocolException, IOException {
+							response.getEntity().writeTo(outstream);
+							return EntityUtils.toByteArray(response.getEntity());
+						}
+					}), "output");
 		}
-		return new byte[0];
 	}
 	
 
 	/**
 	 * @param args
+	 * @throws Exception
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+	    new PullData("dlapalomento", 1).pull(new FileOutputStream(new File("target", "output")));
 	}
 }
