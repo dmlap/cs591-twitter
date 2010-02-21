@@ -15,9 +15,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>net.homeip.yusuke</groupId>
-      <artifactId>twitter4j-core</artifactId>
-      <version>[2.1,)</version>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.0.1</version>
     </dependency>
   </dependencies>
 </project>
