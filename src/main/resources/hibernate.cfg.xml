@@ -5,7 +5,8 @@
 
 <hibernate-configuration>
 		<session-factory>
+			<property name="dialect">org.hibernate.dialect.HSQLDialect</property>
             <mapping package="edu.bu.entities"/>
-            <mapping class="Users"/>
+            <mapping class="edu.bu.entities.Users"/>
 		</session-factory>
 </hibernate-configuration>
