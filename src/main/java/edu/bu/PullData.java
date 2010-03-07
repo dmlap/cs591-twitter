@@ -35,8 +35,13 @@ public class PullData {
 	private static final String TWITTER_API_URL = "http://api.twitter.com";
 	private static final String TWITTER_STATUSES = TWITTER_API_URL + "/1/statuses/";
 	private static final String USER_TIMELINE_XML = TWITTER_STATUSES + "user_timeline.xml";
+	private static final String PUBLIC_TIMELINE_XML = TWITTER_STATUSES + "public_timeline.xml";
+	private static final String TWITTER_FOLLOWERS = TWITTER_API_URL + "/1/followers/";
+	private static final String USER_FOLLOWER_IDS_XML = TWITTER_FOLLOWERS + "ids.xml";
 	private static final String SCREEN_NAME_PARAM = "screen_name";
+	private static final String USER_ID_PARAM = "user_id";
 	private static final String PAGE_PARAM = "page";
+	private static final String CURSOR_PARAM = "cursor";
 	private static final String QPARAM_START = "?";
 	private static final String PARAM_ASSIGNMENT = "=";
 	private static final String PARAM_SEPARATOR = "&";
@@ -64,6 +69,19 @@ public class PullData {
 			.toString();
 	}
 	
+	private String apply(String base, long userID, int cursor) {
+		return new StringBuilder(base)
+			.append(QPARAM_START)
+			.append(USER_ID_PARAM)
+			.append(PARAM_ASSIGNMENT)
+			.append(userID)
+			.append(PARAM_SEPARATOR)
+			.append(CURSOR_PARAM)
+			.append(PARAM_ASSIGNMENT)
+			.append(cursor)
+			.toString();
+	}
+	
 	public void pull(final OutputStream outstream) throws ClientProtocolException, IOException {
 		HttpClient httpClient = new DefaultHttpClient();
 		for (int i = 0; i < PAGE_COUNT; ++i) {
@@ -86,61 +104,33 @@ public class PullData {
 	 */
 	public static void main(String[] args) throws Exception {
 	    //new PullData("dlapalomento", 1).pull(new FileOutputStream(new File("target", "output")));
-		sampleUsers();
+		//new PullData("dlapalomento", 1).sampleUsers(new FileOutputStream(new File("target", "output")));
+		new PullData("dlapalomento", 1).getRandomUser();
 	}
 	
-	public static void sampleUsers() {
-		try {
-			TwitterFactory factory = new TwitterFactory();
-	    	Twitter twitter = factory.getInstance();
-	    	LinkedHashSet<Long> users = new LinkedHashSet<Long>();
-	    	LinkedList<Long> queue = new LinkedList<Long>();
-	    	Random rand = new Random();
-	    	
-	    	// Pull a random user from the public timeline
-			long starter = getRandomUser();
-	    	users.add(starter);
-	    	queue.push(starter);		
-			
-			while(users.size() < 10) {
-				if (queue.isEmpty())
-					queue.push(getRandomUser());
-				else {
-					long user = queue.poll();
-					IDs followers = twitter.getFollowersIDs(user);
-					int numToPull = (int)Math.floor(followers.getIDs().length * SAMPLE_PCT);
-					
-					// Limit followers pull
-					if (numToPull > MAX_FOLLOWERS)
-						numToPull = MAX_FOLLOWERS;
-		
-					// Work through followers
-					for(int i = 0; i < numToPull; i++) {
-						user = (long)followers.getIDs()[rand.nextInt(followers.getIDs().length)];
-						users.add(user);
-						queue.push(user);
+	public void sampleUsers() throws ClientProtocolException, IOException {
+		HttpClient httpClient = new DefaultHttpClient();
+		long userID = 111408729;
+		DataAccess.writeByteArray(httpClient.execute(new HttpGet(apply(USER_FOLLOWER_IDS_XML,
+				userID, -1)), new ResponseHandler<byte[]>() {
+					@Override
+					public byte[] handleResponse(HttpResponse response)
+							throws ClientProtocolException, IOException {
+						return EntityUtils.toByteArray(response.getEntity());
 					}
-				}
-			}
-			
-			// Write users to file
-			writeFile(users, "C:\\test.txt");
-		} catch(TwitterException tex) {
-			tex.printStackTrace();
-		} catch(Exception ex) {
-			ex.printStackTrace();
-		}
+				}), "C:\\test.txt");
 	}
 	
-	public static long getRandomUser() throws TwitterException {
-		TwitterFactory factory = new TwitterFactory();
-    	Twitter twitter = factory.getInstance();
-    	Random rand = new Random();
-    	
-    	ResponseList<Status> publicTimeline = twitter.getPublicTimeline();
-		Status start = publicTimeline.get(rand.nextInt(publicTimeline.size()));
-		
-		return start.getId();
+	public void getRandomUser() throws ClientProtocolException, IOException {
+		HttpClient httpClient = new DefaultHttpClient();
+		DataAccess.writeByteArray(httpClient.execute(new HttpGet(PUBLIC_TIMELINE_XML),
+				new ResponseHandler<byte[]>() {
+					@Override
+					public byte[] handleResponse(HttpResponse response)
+							throws ClientProtocolException, IOException {
+						return EntityUtils.toByteArray(response.getEntity());
+					}
+				}), "C:\\test.txt");
 	}
 	
 	public static void writeFile(Object obj, String file) {
