@@ -85,13 +85,15 @@ public class PullData {
 	public void pull(final OutputStream outstream) throws ClientProtocolException, IOException {
 		HttpClient httpClient = new DefaultHttpClient();
 		for (int i = 0; i < PAGE_COUNT; ++i) {
-			DataAccess.writeByteArray(httpClient.execute(new HttpGet(apply(USER_TIMELINE_XML,
-					username, i)), new ResponseHandler<byte[]>() {
+			DataAccess.writeByteArray(httpClient.execute(new HttpGet(apply(
+					USER_TIMELINE_XML, username, i)),
+					new ResponseHandler<byte[]>() {
 						@Override
 						public byte[] handleResponse(HttpResponse response)
 								throws ClientProtocolException, IOException {
 							response.getEntity().writeTo(outstream);
-							return EntityUtils.toByteArray(response.getEntity());
+							return EntityUtils
+									.toByteArray(response.getEntity());
 						}
 					}), "output");
 		}
