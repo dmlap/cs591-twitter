@@ -8,6 +8,11 @@
   <name>twitter-analysis</name>
   <url>http://maven.apache.org</url>
   <dependencies>
+  	<dependency>
+      <groupId>org.h2database</groupId>
+      <artifactId>h2database</artifactId>
+      <version>1.0.20061217</version>
+	</dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
