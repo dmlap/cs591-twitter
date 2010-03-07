@@ -1,15 +1,22 @@
 package edu.bu;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.Set;
+
+import org.dom4j.*;
+import org.dom4j.io.SAXReader;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -18,14 +25,10 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-
-import twitter4j.IDs;
-import twitter4j.ResponseList;
-import twitter4j.Status;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 /**
  * Pulls XML data from twitter and stores it in the filesystem.
@@ -106,7 +109,7 @@ public class PullData {
 	 */
 	public static void main(String[] args) throws Exception {
 	    //new PullData("dlapalomento", 1).pull(new FileOutputStream(new File("target", "output")));
-		//new PullData("dlapalomento", 1).sampleUsers(new FileOutputStream(new File("target", "output")));
+		//new PullData("dlapalomento", 1).sampleUsers();
 		new PullData("dlapalomento", 1).getRandomUser();
 	}
 	
@@ -123,8 +126,8 @@ public class PullData {
 				}), "C:\\test.txt");
 	}
 	
-	public void getRandomUser() throws ClientProtocolException, IOException {
-		HttpClient httpClient = new DefaultHttpClient();
+	public void getRandomUser() throws ClientProtocolException, IOException, DocumentException {
+		/*HttpClient httpClient = new DefaultHttpClient();
 		DataAccess.writeByteArray(httpClient.execute(new HttpGet(PUBLIC_TIMELINE_XML),
 				new ResponseHandler<byte[]>() {
 					@Override
@@ -132,7 +135,37 @@ public class PullData {
 							throws ClientProtocolException, IOException {
 						return EntityUtils.toByteArray(response.getEntity());
 					}
-				}), "C:\\test.txt");
+				}), "C:\\test.txt");*/
+		
+		Set<String> userIds = new HashSet<String>();
+		
+		// Open the doc
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(new FileInputStream("C:\\publictimeline.xml"));
+		
+		// Parse user id's
+		Element root = document.getRootElement();
+		for (Iterator<Element> itstatuses = root.elementIterator(); itstatuses.hasNext(); ) {
+	 		Element statuses = itstatuses.next();
+	 		for (Iterator<Element> itstatus = statuses.elementIterator(); itstatus.hasNext(); ){
+	 			Element status = itstatus.next();
+	 			if (status.getName().compareTo("user") == 0) {
+	 				for (Iterator<Element> ituser = status.elementIterator(); ituser.hasNext(); ) {
+	 					Element user = ituser.next();
+	 					if (user.getName().compareTo("id") == 0) {
+	 						userIds.add(user.getText());
+	 						break;
+	 					}
+	 				}
+	 				break;
+	 			}
+	 		}
+		}
+		
+		// Convert the set to an array
+		String[] ids = (String[])userIds.toArray(new String[userIds.size()]);
+		Random rand = new Random();
+		System.out.println(ids[rand.nextInt(ids.length)]);
 	}
 	
 	public static void writeFile(Object obj, String file) {

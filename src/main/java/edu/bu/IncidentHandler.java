@@ -21,8 +21,8 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
-/**
  * An {@link ContentHandler} that transforms twitter's user timeline XML format
+ /**
  * into incident reports.
  * 
  * @author dml
