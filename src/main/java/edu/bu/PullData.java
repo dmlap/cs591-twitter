@@ -1,5 +1,6 @@
 package edu.bu;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -30,6 +31,8 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
+import edu.bu.entities.Users;
+
 /**
  * Pulls XML data from twitter and stores it in the filesystem.
  * 
@@ -41,6 +44,8 @@ public class PullData {
 	private static final String PUBLIC_TIMELINE_XML = TWITTER_STATUSES + "public_timeline.xml";
 	private static final String TWITTER_FOLLOWERS = TWITTER_API_URL + "/1/followers/";
 	private static final String USER_FOLLOWER_IDS_XML = TWITTER_FOLLOWERS + "ids.xml";
+	private static final String TWITTER_USERS = TWITTER_API_URL + "/1/users/";
+	private static final String SHOW_XML = TWITTER_USERS + "show.xml";
 	private static final String SCREEN_NAME_PARAM = "screen_name";
 	private static final String USER_ID_PARAM = "user_id";
 	private static final String PAGE_PARAM = "page";
@@ -49,8 +54,9 @@ public class PullData {
 	private static final String PARAM_ASSIGNMENT = "=";
 	private static final String PARAM_SEPARATOR = "&";
 	private static final int PAGE_COUNT = 1;
-	private static final float SAMPLE_PCT = 0.50f;
-	private static final int MAX_FOLLOWERS = 50;
+	private static final float SAMPLE_PCT = 0.20f;
+	private static final int MAX_SAMPLES = 50;
+	private static final int MAX_SAMPLED_USERS = 10;
 	private final String username;
 	private final int rounds;
 	
@@ -72,7 +78,7 @@ public class PullData {
 			.toString();
 	}
 	
-	private String apply(String base, long userID, int cursor) {
+	private String apply(String base, Long userID, int cursor) {
 		return new StringBuilder(base)
 			.append(QPARAM_START)
 			.append(USER_ID_PARAM)
@@ -82,6 +88,15 @@ public class PullData {
 			.append(CURSOR_PARAM)
 			.append(PARAM_ASSIGNMENT)
 			.append(cursor)
+			.toString();
+	}
+	
+	private String apply(String base, String userIDs) {
+		return new StringBuilder(base)
+			.append(QPARAM_START)
+			.append(USER_ID_PARAM)
+			.append(PARAM_ASSIGNMENT)
+			.append(userIDs)
 			.toString();
 	}
 	
@@ -109,39 +124,124 @@ public class PullData {
 	 */
 	public static void main(String[] args) throws Exception {
 	    //new PullData("dlapalomento", 1).pull(new FileOutputStream(new File("target", "output")));
+		
 		//new PullData("dlapalomento", 1).sampleUsers();
-		new PullData("dlapalomento", 1).getRandomUser();
+		
+		//Users user = new PullData("dlapalomento", 1).getRandomUser();
+		//System.out.println(user.getName());
+		//System.out.println(user.getId());
+		//System.out.println(user.getDegree());
+		
+		/*Set<Users> users = new PullData("dlapalomento", 1).sampleFollowers(new Long(18936866));
+		
+		Iterator<Users> it = users.iterator();
+		while (it.hasNext()) {
+			Users user = it.next();
+			System.out.println(user.getName());
+			System.out.println(user.getId());
+			System.out.println(user.getDegree());
+		}*/
+		
+		new PullData("dlapalomento", 1).sampleUsers();
 	}
 	
-	public void sampleUsers() throws ClientProtocolException, IOException {
-		HttpClient httpClient = new DefaultHttpClient();
-		long userID = 111408729;
-		DataAccess.writeByteArray(httpClient.execute(new HttpGet(apply(USER_FOLLOWER_IDS_XML,
-				userID, -1)), new ResponseHandler<byte[]>() {
-					@Override
-					public byte[] handleResponse(HttpResponse response)
-							throws ClientProtocolException, IOException {
-						return EntityUtils.toByteArray(response.getEntity());
+	public void sampleUsers() throws ClientProtocolException, IOException, DocumentException {
+		Set<Users> workingusers = new HashSet<Users>();
+		Set<Users> users = new HashSet<Users>();
+		
+		// Get initial user
+		Users user = null;
+		
+		while (user == null) {
+			try {
+				user = this.getRandomUser();
+			} catch (Exception ex) {
+				//ex.printStackTrace();
+			}
+		}
+		
+		workingusers.add(user);
+		
+		// Call recursive function
+		Set<Users> sampleset = sample(workingusers, users);
+		
+		Iterator<Users> it = sampleset.iterator();
+		while (it.hasNext()) {
+			user = it.next();
+			System.out.println(user.getName());
+			System.out.println(user.getId());
+			System.out.println(user.getDegree());
+		}
+	}
+	
+	public Set<Users> sample(Set<Users> workingset, Set<Users> users) throws ClientProtocolException, IOException, DocumentException {
+		System.out.println("Recursive function");
+		if (users.size() > MAX_SAMPLED_USERS)
+			return users;
+		else {
+			// Sample followers for workingset
+			if (workingset.size() == 0) {
+				System.out.println("Working set is 0, get random user");
+				// Get initial user
+				Users user = null;
+				
+				while (user == null) {
+					try {
+						user = this.getRandomUser();
+					} catch (Exception ex) {
+						//ex.printStackTrace();
 					}
-				}), "C:\\test.txt");
+				}
+				System.out.println("Added random user, call recursively");
+				workingset.add(user);
+				users.add(user);
+				
+				return sample(workingset, users);
+			} else {
+				System.out.println("Iterate through working set");
+				Set<Users> newworkingset = new HashSet<Users>();
+				Iterator<Users> it = workingset.iterator();
+				System.out.println("Iterate through users: " + String.valueOf(workingset.size()));
+				int counter = 0;
+				while (it.hasNext()) {
+					System.out.println("User # " + String.valueOf(counter));
+					Users user = it.next();
+					users.add(user);
+					newworkingset.addAll(this.sampleFollowers(user.getId()));
+				}
+				System.out.println("Call recursive");
+				return sample(newworkingset, users);
+			}
+		}
 	}
 	
-	public void getRandomUser() throws ClientProtocolException, IOException, DocumentException {
-		/*HttpClient httpClient = new DefaultHttpClient();
-		DataAccess.writeByteArray(httpClient.execute(new HttpGet(PUBLIC_TIMELINE_XML),
+	/**
+	 * 
+	 * @return A random user from the public timeline
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
+	public Users getRandomUser() throws ClientProtocolException, IOException, DocumentException {
+		HttpClient httpClient = new DefaultHttpClient();
+		byte[] publictimeline = httpClient.execute(new HttpGet(PUBLIC_TIMELINE_XML),
 				new ResponseHandler<byte[]>() {
 					@Override
 					public byte[] handleResponse(HttpResponse response)
 							throws ClientProtocolException, IOException {
 						return EntityUtils.toByteArray(response.getEntity());
 					}
-				}), "C:\\test.txt");*/
+				});
 		
-		Set<String> userIds = new HashSet<String>();
+		Set<Users> users = new HashSet<Users>();
+		
+		Long id = null;
+		String name = "";
+		int degree = -1;
 		
 		// Open the doc
 		SAXReader reader = new SAXReader();
-		Document document = reader.read(new FileInputStream("C:\\publictimeline.xml"));
+		Document document = reader.read(new ByteArrayInputStream(publictimeline));
 		
 		// Parse user id's
 		Element root = document.getRootElement();
@@ -153,7 +253,20 @@ public class PullData {
 	 				for (Iterator<Element> ituser = status.elementIterator(); ituser.hasNext(); ) {
 	 					Element user = ituser.next();
 	 					if (user.getName().compareTo("id") == 0) {
-	 						userIds.add(user.getText());
+	 						id = Long.valueOf(user.getText());
+	 					} else if (user.getName().compareTo("name") == 0) {
+	 						name = user.getText();
+	 					} else if (user.getName().compareTo("followers_count") == 0) {
+	 						degree = Integer.parseInt(user.getText());
+	 						
+	 						Users pubuser = new Users();
+	 						pubuser.createUser(id, name, degree);
+	 						users.add(pubuser);
+
+	 						id = null;
+	 						name = "";
+	 						degree = -1;
+	 						
 	 						break;
 	 					}
 	 				}
@@ -163,9 +276,104 @@ public class PullData {
 		}
 		
 		// Convert the set to an array
-		String[] ids = (String[])userIds.toArray(new String[userIds.size()]);
+		Users[] ids = users.toArray(new Users[users.size()]);
 		Random rand = new Random();
-		System.out.println(ids[rand.nextInt(ids.length)]);
+		return ids[rand.nextInt(ids.length)];
+	}
+	
+	/**
+	 * 
+	 * @param idval The ID of the user to sample followers from
+	 * @return The set of sampled users
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
+	public Set<Users> sampleFollowers(Long idval) throws ClientProtocolException, IOException, DocumentException {
+		Set<Users> users = new HashSet<Users>();
+		Set<String> userids = new HashSet<String>();
+		System.out.println("Pull followers");
+		HttpClient httpClient = new DefaultHttpClient();
+		byte[] followers = httpClient.execute(new HttpGet(apply(USER_FOLLOWER_IDS_XML, idval, -1)),
+				new ResponseHandler<byte[]>() {
+					@Override
+					public byte[] handleResponse(HttpResponse response)
+							throws ClientProtocolException, IOException {
+						return EntityUtils.toByteArray(response.getEntity());
+					}
+				});
+		
+		// Open the doc
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(new ByteArrayInputStream(followers));
+		System.out.println("Parse XML");
+		// Parse user id's
+		Element root = document.getRootElement();
+		for (Iterator<Element> itidlist = root.elementIterator(); itidlist.hasNext(); ) {
+	 		Element ids = itidlist.next();
+	 		for (Iterator<Element> itids = ids.elementIterator(); itids.hasNext(); ){
+	 			Element id = itids.next();
+	 			userids.add(id.getText());
+	 		}
+		}
+		
+		// Sample users
+		Set<String> samples = new HashSet<String>();
+		String[] idnums = userids.toArray(new String[userids.size()]);
+		int samplenum = ((int)Math.floor(idnums.length * SAMPLE_PCT) > MAX_SAMPLES) ? MAX_SAMPLES : (int)Math.floor(idnums.length * SAMPLE_PCT);
+		System.out.println("Sample users");
+		while (samples.size() < samplenum) {
+			Random rand = new Random();
+			samples.add(idnums[rand.nextInt(idnums.length)]);
+		}
+		
+		// Get users info
+		Iterator<String> it = samples.iterator();
+		while (it.hasNext()) {
+			System.out.println("Pull follower data");
+			byte[] userdata = httpClient.execute(new HttpGet(apply(SHOW_XML, it.next())),
+					new ResponseHandler<byte[]>() {
+						@Override
+						public byte[] handleResponse(HttpResponse response)
+								throws ClientProtocolException, IOException {
+							return EntityUtils.toByteArray(response.getEntity());
+						}
+					});
+			
+			Long id = null;
+			String name = "";
+			int degree = -1;
+			
+			// Open the doc
+			reader = new SAXReader();
+			document = reader.read(new ByteArrayInputStream(userdata));
+			System.out.println("Parse follower data");
+			// Parse user id's
+			root = document.getRootElement();
+			for (Iterator<Element> ituser = root.elementIterator(); ituser.hasNext(); ) {
+		 		Element user = ituser.next();
+		 		
+		 		if (user.getName().compareTo("id") == 0) {
+		 			id = Long.valueOf(user.getText());
+		 		} else if (user.getName().compareTo("name") == 0) {
+		 			name = user.getText();
+		 		} else if (user.getName().compareTo("followers_count") == 0) {
+		 			degree = Integer.parseInt(user.getText());
+		 						
+		 			Users follower = new Users();
+		 			follower.createUser(id, name, degree);
+		 			users.add(follower);
+
+	 				id = null;
+	 				name = "";
+	 				degree = -1;
+		 						
+	 				break;
+	 			}
+	 		}
+		}
+		
+		return users;
 	}
 	
 	public static void writeFile(Object obj, String file) {
