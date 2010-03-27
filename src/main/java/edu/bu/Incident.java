@@ -31,4 +31,22 @@ public class Incident {
 		this.sensor = sensor;
 		this.identifier = identifier;
 	}
+
+	public DateTime getDateTime() {
+		return dateTime;
+	}
+
+	public Sensor getSensor() {
+		return sensor;
+	}
+
+	public String getIdentifier() {
+		return identifier;
+	}
+
+	@Override
+	public String toString() {
+		return "{dateTime=" + dateTime + ", identifier=" + identifier
+				+ ", sensor=" + sensor + "}";
+	}
 }

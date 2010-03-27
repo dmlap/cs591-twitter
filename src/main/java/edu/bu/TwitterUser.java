@@ -24,4 +24,9 @@ public class TwitterUser implements Sensor {
 		return username;
 	}
 
+	@Override
+	public String toString() {
+		return "{user: " + username + "}";
+	}
+
 }
