@@ -6,7 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.Date;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -15,9 +15,6 @@ import java.util.Set;
 import org.dom4j.*;
 import org.dom4j.io.SAXReader;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 
 import org.apache.http.HttpResponse;
@@ -404,7 +401,7 @@ public class PullData {
 	 		} else if (user.getName().compareTo("followers_count") == 0) {
 	 			degree = Integer.parseInt(user.getText());
 	 			follower.createUser(id, name, degree);
-
+	 			
  				id = null;
  				name = "";
  				degree = -1;
