@@ -249,8 +249,7 @@ public class PullData {
 	 					} else if (user.getName().compareTo("followers_count") == 0) {
 	 						degree = Integer.parseInt(user.getText());
 	 						
-	 						Users pubuser = new Users();
-	 						pubuser.createUser(id, name, degree);
+	 						Users pubuser = Users.createUser(id, name, degree);
 	 						users.add(pubuser);
 
 	 						id = null;
@@ -350,8 +349,7 @@ public class PullData {
 		 		} else if (user.getName().compareTo("followers_count") == 0) {
 		 			degree = Integer.parseInt(user.getText());
 		 						
-		 			Users follower = new Users();
-		 			follower.createUser(id, name, degree);
+		 			Users follower = Users.createUser(id, name, degree);
 		 			users.add(follower);
 
 	 				id = null;
