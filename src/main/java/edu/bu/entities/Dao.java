@@ -27,5 +27,13 @@ public interface Dao<T, K> {
 	 *            - the object to be persisted
 	 */
 	void save(T target);
+	
+	/**
+	 * Deletes the persistent representation of the specified <code>T</code>
+	 * 
+	 * @param target
+	 *            - the object to be deleted
+	 */
+	void delete(T target);
 
 }

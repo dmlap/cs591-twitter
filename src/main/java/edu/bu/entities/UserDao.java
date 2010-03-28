@@ -28,5 +28,16 @@ public class UserDao implements Dao<Users, Long> {
 			}
 		});
 	}
+
+	@Override
+	public void delete(final Users target) {
+		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
+			@Override
+			public Void run(Session session) {
+				session.delete(target);
+				return null;
+			}
+		});
+	}
 	
 }
