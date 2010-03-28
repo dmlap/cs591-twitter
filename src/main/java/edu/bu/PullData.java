@@ -1,17 +1,15 @@
 package edu.bu;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
-
-import org.dom4j.*;
-import org.dom4j.io.SAXReader;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -20,10 +18,10 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.XMLReaderFactory;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
 
 import edu.bu.entities.Users;
 
@@ -134,7 +132,7 @@ public class PullData {
 			System.out.println(user.getDegree());
 		}*/
 		
-		new PullData("dlapalomento", 1).sampleUsers();
+		new PullData("dlapalomento").sampleUsers();
 	}
 	
 	public void sampleUsers() throws ClientProtocolException, IOException, DocumentException {
