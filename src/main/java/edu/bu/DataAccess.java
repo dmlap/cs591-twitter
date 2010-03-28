@@ -7,48 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import twitter4j.IDs;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-
 public class DataAccess {
 
-	public static void main( String[] args )
-    {
-    	TwitterFactory factory = new TwitterFactory();
-    	Twitter twitter = factory.getInstance();
-    	
-    	try {
-			IDs followers = twitter.getFollowersIDs("dlapalomento");
-			int[] ids = followers.getIDs();
-			
-			for(int i = 0; i < ids.length; i++)
-				System.out.println(ids[i]);
-		} catch (TwitterException e) {
-			e.printStackTrace();
-		}
-        
-        String content = "Test byte array write";
-        byte[] output = content.getBytes();
-        String filename = "C:\\test.txt";
-        
-        boolean success = writeByteArray(output, filename);
-        System.out.println(success);
-        
-        File file = new File(filename);
-        byte[] contents = new byte[1];
-        try {
-			contents = readByteArray(file);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-        String readvalue = new String(contents);
-        System.out.println(readvalue);
-        
-        System.exit(0);
-    }
-    
     public static boolean writeByteArray(byte[] output, String filename){
     	boolean success = false;
     	
