@@ -1,12 +1,10 @@
 package edu.bu;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Random;
@@ -44,11 +42,9 @@ public class PullData {
 	private static final float SAMPLE_PCT = 0.50f;
 	private static final int MAX_FOLLOWERS = 50;
 	private final String username;
-	private final int rounds;
 	
-	public PullData(String username, int rounds) {
+	public PullData(String username) {
 		this.username = username;
-		this.rounds = rounds;
 	}
 	
 	private String apply(String base, String screenName, int page) {
