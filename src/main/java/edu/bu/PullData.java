@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,6 +16,8 @@ import java.util.Set;
 
 import org.dom4j.*;
 import org.dom4j.io.SAXReader;
+import org.h2.jdbc.JdbcBatchUpdateException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatterBuilder;
 
@@ -26,6 +30,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import edu.bu.entities.Statuses;
+import edu.bu.entities.UserDao;
 import edu.bu.entities.Users;
 
 /**
@@ -53,7 +58,7 @@ public class PullData {
 	private static final int PAGE_COUNT = 1;
 	private static final float SAMPLE_PCT = 0.20f;
 	private static final int MAX_SAMPLES = 50;
-	private static final int MAX_SAMPLED_USERS = 10;
+	private static final int MAX_SAMPLED_USERS = 100;
 	private final String username;
 	
 	public PullData(String username) {
@@ -158,26 +163,7 @@ public class PullData {
 			System.out.println(user.getDegree());
 		}*/
 		
-		//new PullData("dlapalomento").sampleUsers();
-		
-		DateTime dt = new DateTimeFormatterBuilder()
-			.appendDayOfWeekShortText()
-			.appendLiteral(" ")
-			.appendMonthOfYearShortText()
-			.appendLiteral(" ")
-			.appendDayOfMonth(2)
-			.appendLiteral(" ")
-			.appendHourOfDay(2)
-			.appendLiteral(":")
-			.appendMinuteOfHour(2)
-			.appendLiteral(":")
-			.appendSecondOfMinute(2)
-			.appendLiteral(" ")
-			.appendTimeZoneOffset(null, false, 2, 2)
-			.appendLiteral(" ")
-			.appendYear(4, 4)
-			.toFormatter().parseDateTime("Tue Apr 07 22:52:51 +0000 2009");
-		System.out.println(dt.toString());
+		new PullData("dlapalomento").sampleUsers();
 	}
 	
 	public void sampleUsers() throws ClientProtocolException, IOException, DocumentException {
@@ -200,9 +186,11 @@ public class PullData {
 		// Call recursive function
 		Set<Users> sampleset = sample(workingusers, users);
 		
+		UserDao dao = new UserDao();
 		Iterator<Users> it = sampleset.iterator();
 		while (it.hasNext()) {
 			user = it.next();
+			dao.save(user);
 			System.out.println(user.getName());
 			System.out.println(user.getId());
 			System.out.println(user.getDegree());
@@ -237,12 +225,26 @@ public class PullData {
 				Iterator<Long> it = workingset.iterator();
 				System.out.println("Iterate through users: " + String.valueOf(workingset.size()));
 				int counter = 0;
+				UserDao usrdao = new UserDao();
 				while(it.hasNext()) {
 					System.out.println("User # " + String.valueOf(counter));
+					counter++;
 					Long userid = it.next();
-					Users user = this.getUserData(userid);
-					users.add(user);
-					newworkingset.addAll(this.sampleFollowers(userid));
+					
+					try {
+						Users user = this.getUserData(userid);
+						users.add(user);
+						if (user.getId() != null) {
+							usrdao.save(user);
+							newworkingset.addAll(this.sampleFollowers(userid));
+						}
+					} catch (SocketTimeoutException ex) {
+						System.out.println("Get user data timeout");
+					} catch (SocketException ex) {
+						System.out.println("Get user data timeout");
+					} catch (ConstraintViolationException ex) {
+						System.out.println("Duplicate user");
+					}
 				}
 				System.out.println("Call recursive");
 				return sample(newworkingset, users);
@@ -259,7 +261,7 @@ public class PullData {
 	 */
 	public Users getRandomUser() throws ClientProtocolException, IOException, DocumentException {
 		HttpClient httpClient = new DefaultHttpClient();
-		System.out.println("Get the public timeline");
+
 		byte[] publictimeline = httpClient.execute(new HttpGet(PUBLIC_TIMELINE_XML),
 				new ResponseHandler<byte[]>() {
 					@Override
@@ -274,19 +276,19 @@ public class PullData {
 		Long id = null;
 		String name = "";
 		int degree = -1;
-		System.out.println("Open document to read");
+
 		// Open the doc
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(publictimeline));
-		System.out.println("Parse doc");
+
 		// Parse user id's
 		Element root = document.getRootElement();
-		for (Iterator<Element> itstatuses = root.elementIterator(); itstatuses.hasNext(); ) {
+		for (@SuppressWarnings("unchecked")Iterator<Element> itstatuses = root.elementIterator(); itstatuses.hasNext(); ) {
 	 		Element statuses = itstatuses.next();
-	 		for (Iterator<Element> itstatus = statuses.elementIterator(); itstatus.hasNext(); ){
+	 		for (@SuppressWarnings("unchecked")Iterator<Element> itstatus = statuses.elementIterator(); itstatus.hasNext(); ){
 	 			Element status = itstatus.next();
 	 			if (status.getName().compareTo("user") == 0) {
-	 				for (Iterator<Element> ituser = status.elementIterator(); ituser.hasNext(); ) {
+	 				for (@SuppressWarnings("unchecked")Iterator<Element> ituser = status.elementIterator(); ituser.hasNext(); ) {
 	 					Element user = ituser.next();
 	 					if (user.getName().compareTo("id") == 0) {
 	 						id = Long.valueOf(user.getText());
@@ -295,8 +297,7 @@ public class PullData {
 	 					} else if (user.getName().compareTo("followers_count") == 0) {
 	 						degree = Integer.parseInt(user.getText());
 	 						
-	 						Users pubuser = new Users();
-	 						pubuser.createUser(id, name, degree);
+	 						Users pubuser = Users.createUser(id, name, degree);
 	 						users.add(pubuser);
 
 	 						id = null;
@@ -310,7 +311,7 @@ public class PullData {
 	 			}
 	 		}
 		}
-		System.out.println("Randomly select a user");
+
 		// Convert the set to an array
 		Users[] ids = users.toArray(new Users[users.size()]);
 		Random rand = new Random();
@@ -327,7 +328,7 @@ public class PullData {
 	 */
 	public Set<Long> sampleFollowers(Long idval) throws ClientProtocolException, IOException, DocumentException {
 		Set<Long> userids = new HashSet<Long>();
-		System.out.println("Pull followers");
+
 		HttpClient httpClient = new DefaultHttpClient();
 		byte[] followers = httpClient.execute(new HttpGet(apply(USER_FOLLOWER_IDS_XML, idval, -1)),
 				new ResponseHandler<byte[]>() {
@@ -341,26 +342,29 @@ public class PullData {
 		// Open the doc
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(followers));
-		System.out.println("Parse XML");
+		
 		// Parse user id's
 		Element root = document.getRootElement();
-		for (Iterator<Element> itidlist = root.elementIterator(); itidlist.hasNext(); ) {
+		for (@SuppressWarnings("unchecked")Iterator<Element> itidlist = root.elementIterator(); itidlist.hasNext(); ) {
 	 		Element ids = itidlist.next();
-	 		for (Iterator<Element> itids = ids.elementIterator(); itids.hasNext(); ){
+	 		for (@SuppressWarnings("unchecked")Iterator<Element> itids = ids.elementIterator(); itids.hasNext(); ){
 	 			Element id = itids.next();
-	 			userids.add(Long.getLong(id.getText()));
+	 			userids.add(Long.parseLong(id.getText()));
 	 		}
 		}
 		
 		// Sample users
 		Set<Long> samples = new HashSet<Long>();
+		System.out.println("Followers pulled = " + userids.size());
 		Long[] idnums = userids.toArray(new Long[userids.size()]);
+
 		int samplenum = ((int)Math.floor(idnums.length * SAMPLE_PCT) > MAX_SAMPLES) ? MAX_SAMPLES : (int)Math.floor(idnums.length * SAMPLE_PCT);
-		System.out.println("Sample users");
+
 		while (samples.size() < samplenum) {
 			Random rand = new Random();
 			samples.add(idnums[rand.nextInt(idnums.length)]);
 		}
+		System.out.println("Total samples " + samples.size());
 		
 		return samples;
 	}
@@ -368,10 +372,11 @@ public class PullData {
 	public Users getUserData(Long idval) throws ClientProtocolException, IOException, DocumentException {
 		// Get users info
 		System.out.println("Pull follower data");
-		Users follower = new Users();
+		Users follower = Users.createUser(null, "", -1);
+		
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(apply(SHOW_XML, idval.toString()));
-		httpget.getParams().setParameter("http.socket.timeout", new Integer(5000));
+		httpget.getParams().setParameter("http.socket.timeout", new Integer(10000));
 		byte[] userdata = httpClient.execute(httpget,
 				new ResponseHandler<byte[]>() {
 					@Override
@@ -391,7 +396,7 @@ public class PullData {
 		System.out.println("Parse follower data");
 		// Parse user id's
 		Element root = document.getRootElement();
-		for (Iterator<Element> ituser = root.elementIterator(); ituser.hasNext(); ) {
+		for (@SuppressWarnings("unchecked")Iterator<Element> ituser = root.elementIterator(); ituser.hasNext(); ) {
 	 		Element user = ituser.next();
 	 		
 	 		if (user.getName().compareTo("id") == 0) {
@@ -400,7 +405,7 @@ public class PullData {
 	 			name = user.getText();
 	 		} else if (user.getName().compareTo("followers_count") == 0) {
 	 			degree = Integer.parseInt(user.getText());
-	 			follower.createUser(id, name, degree);
+	 			follower = Users.createUser(id, name, degree);
 	 			
  				id = null;
  				name = "";

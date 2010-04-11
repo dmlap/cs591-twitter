@@ -20,13 +20,17 @@ public class UserDao implements Dao<Users, Long> {
 
 	@Override
 	public void save(final Users target) {
-		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
+		try {
+			HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
 			public Void run(Session session) {
-				session.save(target);
+				session.save(target);		
 				return null;
 			}
 		});
+		} catch (Exception ex) {
+			System.out.println("Error saving");
+		}
 	}
 	
 }
