@@ -295,8 +295,7 @@ public class PullData {
 	 					} else if (user.getName().compareTo("followers_count") == 0) {
 	 						degree = Integer.parseInt(user.getText());
 	 						
-	 						Users pubuser = new Users();
-	 						pubuser.createUser(id, name, degree);
+	 						Users pubuser = Users.createUser(id, name, degree);
 	 						users.add(pubuser);
 
 	 						id = null;
@@ -368,7 +367,7 @@ public class PullData {
 	public Users getUserData(Long idval) throws ClientProtocolException, IOException, DocumentException {
 		// Get users info
 		System.out.println("Pull follower data");
-		Users follower = new Users();
+		Users follower = null;
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(apply(SHOW_XML, idval.toString()));
 		httpget.getParams().setParameter("http.socket.timeout", new Integer(5000));
@@ -400,7 +399,7 @@ public class PullData {
 	 			name = user.getText();
 	 		} else if (user.getName().compareTo("followers_count") == 0) {
 	 			degree = Integer.parseInt(user.getText());
-	 			follower.createUser(id, name, degree);
+	 			follower = Users.createUser(id, name, degree);
 	 			
  				id = null;
  				name = "";
