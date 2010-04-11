@@ -166,6 +166,13 @@ public class PullData {
 		new PullData("dlapalomento").sampleUsers();
 	}
 	
+	/**
+	 * Function to sample Users from Twitter API
+	 * 
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
 	public void sampleUsers() throws ClientProtocolException, IOException, DocumentException {
 		Set<Long> workingusers = new HashSet<Long>();
 		Set<User> users = new HashSet<User>();
@@ -196,7 +203,19 @@ public class PullData {
 			System.out.println(user.getDegree());
 		}
 	}
-		
+	
+	/**
+	 * Recursive function to collect users
+	 * 
+	 * @param workingset 
+	 * 			- The current working set to pull data for
+	 * @param users
+	 * 			- The current set of collected users
+	 * @return A set of Users to add to the database
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
 	public Set<User> sample(Set<Long> workingset, Set<User> users) throws ClientProtocolException, IOException, DocumentException {
 		System.out.println("Recursive function");
 		if (users.size() > MAX_SAMPLED_USERS)
@@ -253,7 +272,7 @@ public class PullData {
 	}
 	
 	/**
-	 * 
+	 * Randomly selects one of the users from the public timeline
 	 * @return A random user from the public timeline
 	 * @throws ClientProtocolException
 	 * @throws IOException
@@ -320,7 +339,8 @@ public class PullData {
 	
 	/**
 	 * 
-	 * @param idval The ID of the user to sample followers from
+	 * @param idval
+	 * 			- The ID of the user to sample followers from
 	 * @return The set of sampled users
 	 * @throws ClientProtocolException
 	 * @throws IOException
@@ -369,6 +389,15 @@ public class PullData {
 		return samples;
 	}
 	
+	/**
+	 * 
+	 * @param idval
+	 * 			- The ID of the user to get
+	 * @return A User object with all the user's information
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
 	public User getUserData(Long idval) throws ClientProtocolException, IOException, DocumentException {
 		// Get users info
 		System.out.println("Pull follower data");
@@ -434,6 +463,12 @@ public class PullData {
 		return statuses;
 	}
 	
+	/**
+	 * Parses a UTC date into joda DateTime
+	 * @param utcdate
+	 * 			- A string containing the UTC formatted date
+	 * @return A joda DateTime of the parsed date time
+	 */
 	public DateTime parseUTCDate(String utcdate) {
 		return new DateTimeFormatterBuilder()
 		.appendDayOfWeekShortText()
@@ -453,27 +488,5 @@ public class PullData {
 		.appendYear(4, 4)
 		.toFormatter().parseDateTime(utcdate);
 	}
-	
-	public static void writeFile(Object obj, String file) {
-		ObjectOutputStream outputStream = null;
-        
-        try {
-            outputStream = new ObjectOutputStream(new FileOutputStream(file));
-            outputStream.writeObject(obj);
-        } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-            //Close the ObjectOutputStream
-            try {
-                if (outputStream != null) {
-                    outputStream.flush();
-                    outputStream.close();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-	}
+
 }
