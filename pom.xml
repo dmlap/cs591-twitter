@@ -87,5 +87,11 @@
       <url>http://download.java.net/maven/2/</url>
       <layout>default</layout>
     </repository>
+    <repository>
+      <id>maven3.jboss</id>
+      <name>JBoss Maven Repo</name>
+      <url>http://repository.jboss.com/maven2/</url>
+      <layout>default</layout>
+    </repository>
   </repositories>
 </project>
