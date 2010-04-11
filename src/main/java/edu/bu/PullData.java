@@ -29,9 +29,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
-import edu.bu.entities.Statuses;
+import edu.bu.entities.Status;
 import edu.bu.entities.UserDao;
-import edu.bu.entities.Users;
+import edu.bu.entities.User;
 
 /**
  * Pulls XML data from twitter and stores it in the filesystem.
@@ -168,10 +168,10 @@ public class PullData {
 	
 	public void sampleUsers() throws ClientProtocolException, IOException, DocumentException {
 		Set<Long> workingusers = new HashSet<Long>();
-		Set<Users> users = new HashSet<Users>();
+		Set<User> users = new HashSet<User>();
 		
 		// Get initial user
-		Users user = null;
+		User user = null;
 		System.out.println("Get random user");
 		while (user == null) {
 			try {
@@ -184,10 +184,10 @@ public class PullData {
 		workingusers.add(user.getId());
 		
 		// Call recursive function
-		Set<Users> sampleset = sample(workingusers, users);
+		Set<User> sampleset = sample(workingusers, users);
 		
 		UserDao dao = new UserDao();
-		Iterator<Users> it = sampleset.iterator();
+		Iterator<User> it = sampleset.iterator();
 		while (it.hasNext()) {
 			user = it.next();
 			dao.save(user);
@@ -197,7 +197,7 @@ public class PullData {
 		}
 	}
 		
-	public Set<Users> sample(Set<Long> workingset, Set<Users> users) throws ClientProtocolException, IOException, DocumentException {
+	public Set<User> sample(Set<Long> workingset, Set<User> users) throws ClientProtocolException, IOException, DocumentException {
 		System.out.println("Recursive function");
 		if (users.size() > MAX_SAMPLED_USERS)
 			return users;
@@ -206,7 +206,7 @@ public class PullData {
 			if (workingset.size() == 0) {
 				System.out.println("Working set is 0, get random user");
 				// Get initial user
-				Users user = null;
+				User user = null;
 				
 				while (user == null) {
 					try {
@@ -232,7 +232,7 @@ public class PullData {
 					Long userid = it.next();
 					
 					try {
-						Users user = this.getUserData(userid);
+						User user = this.getUserData(userid);
 						users.add(user);
 						if (user.getId() != null) {
 							usrdao.save(user);
@@ -259,7 +259,7 @@ public class PullData {
 	 * @throws IOException
 	 * @throws DocumentException
 	 */
-	public Users getRandomUser() throws ClientProtocolException, IOException, DocumentException {
+	public User getRandomUser() throws ClientProtocolException, IOException, DocumentException {
 		HttpClient httpClient = new DefaultHttpClient();
 
 		byte[] publictimeline = httpClient.execute(new HttpGet(PUBLIC_TIMELINE_XML),
@@ -271,7 +271,7 @@ public class PullData {
 					}
 				});
 		
-		Set<Users> users = new HashSet<Users>();
+		Set<User> users = new HashSet<User>();
 		
 		Long id = null;
 		String name = "";
@@ -297,7 +297,7 @@ public class PullData {
 	 					} else if (user.getName().compareTo("followers_count") == 0) {
 	 						degree = Integer.parseInt(user.getText());
 	 						
-	 						Users pubuser = Users.createUser(id, name, degree);
+	 						User pubuser = User.createUser(id, name, degree);
 	 						users.add(pubuser);
 
 	 						id = null;
@@ -313,7 +313,7 @@ public class PullData {
 		}
 
 		// Convert the set to an array
-		Users[] ids = users.toArray(new Users[users.size()]);
+		User[] ids = users.toArray(new User[users.size()]);
 		Random rand = new Random();
 		return ids[rand.nextInt(ids.length)];
 	}
@@ -369,10 +369,10 @@ public class PullData {
 		return samples;
 	}
 	
-	public Users getUserData(Long idval) throws ClientProtocolException, IOException, DocumentException {
+	public User getUserData(Long idval) throws ClientProtocolException, IOException, DocumentException {
 		// Get users info
 		System.out.println("Pull follower data");
-		Users follower = Users.createUser(null, "", -1);
+		User follower = User.createUser(null, "", -1);
 		
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(apply(SHOW_XML, idval.toString()));
@@ -405,7 +405,7 @@ public class PullData {
 	 			name = user.getText();
 	 		} else if (user.getName().compareTo("followers_count") == 0) {
 	 			degree = Integer.parseInt(user.getText());
-	 			follower = Users.createUser(id, name, degree);
+	 			follower = User.createUser(id, name, degree);
 	 			
  				id = null;
  				name = "";
@@ -418,8 +418,8 @@ public class PullData {
 		return follower;
 	}
 	
-	public Set<Statuses> getUserStatuses(Long userID) throws ClientProtocolException, IOException {
-		Set<Statuses> statuses = new HashSet<Statuses>();
+	public Set<Status> getUserStatuses(Long userID) throws ClientProtocolException, IOException {
+		Set<Status> statuses = new HashSet<Status>();
 		
 		HttpClient httpClient = new DefaultHttpClient();
 		byte[] status = httpClient.execute(new HttpGet(apply(USER_FOLLOWER_IDS_XML, userID, -1)),

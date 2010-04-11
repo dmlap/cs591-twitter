@@ -29,10 +29,10 @@ public class StatusesDaoTest {
 	
 	@Test
 	public void saveLoad() {
-		StatusesDao dao = new StatusesDao();
-		Statuses status = Statuses.createStatus(1L, 1L, "status", new DateTime(2010, 1, 1, 12, 0, 0, 0), false);
+		StatusDao dao = new StatusDao();
+		Status status = Status.createStatus(1L, 1L, "status", new DateTime(2010, 1, 1, 12, 0, 0, 0), false);
 		dao.save(status);
-		Statuses status0 = dao.get(status.getId());
+		Status status0 = dao.get(status.getId());
 		
 		assertEquals(status, status0);
 	}

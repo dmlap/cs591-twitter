@@ -4,15 +4,15 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class Users {
+public class User {
 	private Long id;
 	private String name;
 	private int degree;
 
- 	private Users() {}
+ 	private User() {}
 	
-	public static Users createUser(Long id, String name, int degree) {
-		Users result = new Users();
+	public static User createUser(Long id, String name, int degree) {
+		User result = new User();
 		result.id = id;
 		result.name = name;
 		result.degree = degree;
@@ -62,7 +62,7 @@ public class Users {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Users other = (Users) obj;
+		User other = (User) obj;
 		if (degree != other.degree)
 			return false;
 		if (id == null) {

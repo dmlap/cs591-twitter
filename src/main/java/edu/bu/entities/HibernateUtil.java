@@ -9,8 +9,8 @@ public class HibernateUtil {
 
 	private static final SessionFactory sessionFactory = new AnnotationConfiguration()
 			.addPackage("edu.bu.entities")
-			.addAnnotatedClass(Users.class)
-			.addAnnotatedClass(Statuses.class)
+			.addAnnotatedClass(User.class)
+			.addAnnotatedClass(Status.class)
 			// db properties
 			.setProperty("hibernate.connection.driver_class", "org.h2.Driver")
 			.setProperty("hibernate.connection.url", "jdbc:h2:~/cs591-twitter;AUTO_SERVER=TRUE")

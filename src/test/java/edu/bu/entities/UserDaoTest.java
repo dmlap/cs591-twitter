@@ -29,9 +29,9 @@ public class UserDaoTest {
 	@Test
 	public void saveLoad() {
 		UserDao dao = new UserDao();
-		Users user = Users.createUser(1L, "username", 0);
+		User user = User.createUser(1L, "username", 0);
 		dao.save(user);
-		Users user0 = dao.get(user.getId());
+		User user0 = dao.get(user.getId());
 		
 		assertEquals(user, user0);
 	}

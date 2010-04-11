@@ -5,21 +5,21 @@ import org.hibernate.criterion.Restrictions;
 
 import edu.bu.entities.HibernateUtil.HibernateStatement;
 
-public class UserDao implements Dao<Users, Long> {
+public class UserDao implements Dao<User, Long> {
 
 	@Override
-	public Users get(final Long key) {
-		return HibernateUtil.doWithSession(new HibernateStatement<Users>() {
+	public User get(final Long key) {
+		return HibernateUtil.doWithSession(new HibernateStatement<User>() {
 			@Override
-			public Users run(Session session) {
-				return (Users) session.createCriteria(Users.class).add(
+			public User run(Session session) {
+				return (User) session.createCriteria(User.class).add(
 						Restrictions.idEq(key)).uniqueResult();
 			}
 		});
 	}
 
 	@Override
-	public void save(final Users target) {
+	public void save(final User target) {
 		try {
 			HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
