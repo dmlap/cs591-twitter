@@ -1,25 +1,14 @@
 package edu.bu;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
-
-import org.dom4j.*;
-import org.dom4j.io.SAXReader;
-import org.h2.jdbc.JdbcBatchUpdateException;
-import org.hibernate.exception.ConstraintViolationException;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatterBuilder;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -28,10 +17,17 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+import org.hibernate.exception.ConstraintViolationException;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormatterBuilder;
 
 import edu.bu.entities.Status;
-import edu.bu.entities.UserDao;
 import edu.bu.entities.User;
+import edu.bu.entities.UserDao;
 
 /**
  * Pulls XML data from twitter and stores it in the filesystem.
