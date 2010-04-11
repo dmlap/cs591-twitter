@@ -7,26 +7,26 @@ import org.hibernate.criterion.Restrictions;
 
 import edu.bu.entities.HibernateUtil.HibernateStatement;
 
-public class UserDao implements Dao<Users, Long> {
+public class UserDao implements Dao<User, Long> {
 
 	@Override
-	public Users get(final Long key) {
-		return HibernateUtil.doWithSession(new HibernateStatement<Users>() {
+	public User get(final Long key) {
+		return HibernateUtil.doWithSession(new HibernateStatement<User>() {
 			@Override
-			public Users run(Session session) {
-				return (Users) session.createCriteria(Users.class).add(
+			public User run(Session session) {
+				return (User) session.createCriteria(User.class).add(
 						Restrictions.idEq(key)).uniqueResult();
 			}
 		});
 	}
 
 	@Override
-	public void save(final Users user, final Users... users) {
+	public void save(final User user, final User... users) {
 		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
 			public Void run(Session session) {
 				session.save(user);
-				for(Users u : users) {
+				for(User u : users) {
 					session.save(u);
 				}
 				return null;
@@ -35,12 +35,12 @@ public class UserDao implements Dao<Users, Long> {
 	}
 
 	@Override
-	public void delete(final Users user, final Users... users) {
+	public void delete(final User user, final User... users) {
 		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
 			public Void run(Session session) {
 				session.delete(user);
-				for(Users u : users) {
+				for(User u : users) {
 					session.delete(u);
 				}
 				return null;
@@ -59,13 +59,13 @@ public class UserDao implements Dao<Users, Long> {
 	 * @return up to <code>count</code> {@link Users}, all with
 	 *         {@link Users#getId() ids} greater than <code>id</code>
 	 */
-	public List<Users> findWithIdGt(final long id, final int count) {
+	public List<User> findWithIdGt(final long id, final int count) {
 		return HibernateUtil
-				.doWithSession(new HibernateStatement<List<Users>>() {
+				.doWithSession(new HibernateStatement<List<User>>() {
 					@SuppressWarnings("unchecked")
 					@Override
-					public List<Users> run(Session session) {
-						return session.createCriteria(Users.class).add(
+					public List<User> run(Session session) {
+						return session.createCriteria(User.class).add(
 								Restrictions.gt("id", id)).setMaxResults(count)
 								.list();
 					}

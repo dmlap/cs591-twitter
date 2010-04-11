@@ -7,17 +7,17 @@ import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
 @Entity
-public class Statuses {
+public class Status {
 	private Long id;
 	private Long userID;
 	private String status;
 	private DateTime statusdate;
 	private boolean processed;
 	
-	private Statuses() {}
+	private Status() {}
 	
-	public static Statuses createStatus(Long id, Long userID, String status, DateTime statusdate, boolean processed) {
-		Statuses result = new Statuses();
+	public static Status createStatus(Long id, Long userID, String status, DateTime statusdate, boolean processed) {
+		Status result = new Status();
 		result.id = id;
 		result.userID = userID;
 		result.status = status;
@@ -94,7 +94,7 @@ public class Statuses {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Statuses other = (Statuses) obj;
+		Status other = (Status) obj;
 		if (id == null) {
 			if (other.id != null)
 				return false;
