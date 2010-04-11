@@ -79,6 +79,17 @@
       <artifactId>dom4j</artifactId>
       <version>1.6.1</version>
     </dependency>
+    <dependency>
+    	<groupId>joda-time</groupId>
+    	<artifactId>joda-time-hibernate</artifactId>
+    	<version>1.2</version>
+    	<exclusions>
+    		<exclusion>
+    			<groupId>org.hibernate</groupId>
+    			<artifactId>hibernate</artifactId>
+    		</exclusion>
+    	</exclusions>
+    </dependency>
   </dependencies>
   <repositories>
     <repository>
@@ -88,10 +99,10 @@
       <layout>default</layout>
     </repository>
     <repository>
-      <id>maven3.jboss</id>
-      <name>JBoss Maven Repo</name>
-      <url>http://repository.jboss.com/maven2/</url>
-      <layout>default</layout>
-    </repository>
+     <id>maven3.jboss</id>
+     <name>JBoss Maven Repo</name>
+     <url>http://repository.jboss.com/maven2/</url>
+     <layout>default</layout>
+   </repository>
   </repositories>
 </project>
