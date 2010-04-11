@@ -19,12 +19,29 @@ public class StatusDao implements Dao<Status, Long> {
 	}
 
 	@Override
-	public void save(final Status target) {
+	public void save(final Status target, final Status... targets) {
 			HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
 			public Void run(Session session) {
 				session.save(target);
+				for(Status t : targets) {
+					session.save(t);
+				}
 				session.flush();
+				return null;
+			}
+		});
+	}
+
+	@Override
+	public void delete(final Status target, final Status... targets) {
+		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
+			@Override
+			public Void run(Session session) {
+				session.delete(target);
+				for(Status t : targets) {
+					session.delete(t);
+				}
 				return null;
 			}
 		});

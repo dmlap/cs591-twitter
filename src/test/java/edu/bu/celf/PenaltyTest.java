@@ -1,33 +1,25 @@
 package edu.bu.celf;
 
+import static edu.bu.celf.Penalty.INTERVAL_PENALTY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;
-import org.joda.time.Interval;
 import org.junit.Test;
 
+import edu.bu.CascadeSet;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
-import edu.bu.CascadeSet;
-import edu.bu.Sensor;
 import edu.bu.TwitterUser;
 
 public class PenaltyTest {
-	private static final SensorEvaluator INTERVAL_ONLY = new SensorEvaluator() {
-		@Override
-		public long evaluate(Sensor sensor, Interval detectionInterval) {
-			return Long.MAX_VALUE - detectionInterval.toDurationMillis();
-		}
-	};
 
 	@Test
 	public void notDetectedIncidentEqualsZeroReduction() {
 		Incident incident = new Incident(new DateTime(), new TwitterUser(
 				"user-a"), "undetected-incident");
 		SensorPlacement sensors = new SensorPlacement(new TwitterUser("user-b"));
-		Penalty penalty = new Penalty(INTERVAL_ONLY);
-		assertEquals(0, penalty.penaltyReduction(IncidentCascade.singleton(incident), sensors));
+		assertEquals(0, INTERVAL_PENALTY.penaltyReduction(IncidentCascade.singleton(incident), sensors));
 	}
 	
 	@Test
@@ -40,13 +32,12 @@ public class PenaltyTest {
 		SensorPlacement onlyC = new SensorPlacement(userC);
 		DateTime time0 = new DateTime();
 		DateTime time1 = new DateTime(time0.getMillis() + 1);
-		Penalty penalty = new Penalty(INTERVAL_ONLY);
 		
 		IncidentCascade cascade = new IncidentCascade(new Incident(time0, userA, "id"), new Incident(time1, userB, "id"));
 
-		long atTime0 = penalty.penaltyReduction(cascade, onlyA);
-		long atTime1 = penalty.penaltyReduction(cascade, onlyB);
-		long atNever = penalty.penaltyReduction(cascade, onlyC);
+		long atTime0 = INTERVAL_PENALTY.penaltyReduction(cascade, onlyA);
+		long atTime1 = INTERVAL_PENALTY.penaltyReduction(cascade, onlyB);
+		long atNever = INTERVAL_PENALTY.penaltyReduction(cascade, onlyC);
 
 		assertTrue("Penalty reduction for detecting at time 0 should be greater than detection at time 1.  Time 0: " + atTime0 + ", Time1: " + atTime1, atTime0 > atTime1);
 		assertTrue("Penalty reduction for detecting at time 0 should be greater than never detecting.  Time 0: " + atTime0 + ", never: " + atNever, atTime0 > atNever);
@@ -68,8 +59,7 @@ public class PenaltyTest {
 				return 1.0D;
 			}
 		};
-		Penalty penalty = new Penalty(INTERVAL_ONLY);
-		assertEquals(0, penalty.penaltyReduction(dist, incidents, sensors));
+		assertEquals(0, INTERVAL_PENALTY.penaltyReduction(dist, incidents, sensors));
 	}
 	
 	@Test
@@ -95,8 +85,9 @@ public class PenaltyTest {
 				return 0.1D;
 			}
 		};
-		Penalty penalty = new Penalty(INTERVAL_ONLY);
-		assertGreaterThan(penalty.penaltyReduction(dist, highlyProbable, sensors), penalty.penaltyReduction(dist, highlyUnlikely, sensors));
+		assertGreaterThan(INTERVAL_PENALTY.penaltyReduction(dist,
+				highlyProbable, sensors), INTERVAL_PENALTY.penaltyReduction(
+				dist, highlyUnlikely, sensors));
 	}
 	
 	private <T extends Comparable<T>> void assertGreaterThan(T lhs, T rhs) {

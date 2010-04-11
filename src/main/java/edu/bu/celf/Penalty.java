@@ -3,6 +3,10 @@
  */
 package edu.bu.celf;
 
+import java.util.Set;
+
+import org.joda.time.Interval;
+
 import edu.bu.CascadeSet;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
@@ -16,6 +20,14 @@ import edu.bu.Sensor;
  */
 public class Penalty {
 	public static final long MAX_PENALTY = Long.MAX_VALUE;
+	public static final Penalty INTERVAL_PENALTY = new Penalty(
+			new SensorEvaluator() {
+				@Override
+				public long evaluate(Sensor sensor, Interval detectionInterval) {
+					return Long.MAX_VALUE
+							- detectionInterval.toDurationMillis();
+				}
+			});
 
 	private final SensorEvaluator evaluator;
 
@@ -25,7 +37,7 @@ public class Penalty {
 
 	/**
 	 * Returns the reduction in penalty over all possible {@link Incident}s
-	 * given a {@link SensorPlacement}.
+	 * given a {@link Set} of {@link Sensor}s.
 	 * 
 	 * @param distribution
 	 *            - the {@link IncidentDistribution} for all {@link Incident
@@ -38,12 +50,12 @@ public class Penalty {
 	 * @param cascades
 	 *            - all possible {@link Incident}s
 	 * @param sensors
-	 *            - the {@link SensorPlacement} to evaluate
+	 *            - the {@link Set} of {@link Sensor}s to evaluate
 	 * @return the reduction in penalty over all possible {@link Incident}s
-	 *         given a {@link SensorPlacement}.
+	 *         given a {@link Set} of {@link Sensor}s.
 	 */
 	public long penaltyReduction(IncidentDistribution distribution,
-			CascadeSet cascades, SensorPlacement sensors) {
+			CascadeSet cascades, Set<Sensor> sensors) {
 		long result = 0L;
 		for (IncidentCascade cascade : cascades) {
 			result += distribution.probability(cascade)
@@ -54,17 +66,17 @@ public class Penalty {
 
 	/**
 	 * Returns the reduction in penalty for a given {@link IncidentCascade} and
-	 * {@link SensorPlacement}.
+	 * {@link Set} of {@link Sensor}s.
 	 * 
 	 * @param incident
 	 *            - the {@link IncidentCascade} to evaluate
 	 * @param sensors
-	 *            - the {@link SensorPlacement} to evaluate
+	 *            - the {@link Set} of {@link Sensor}s to evaluate
 	 * @return the reduction in penalty for a given {@link Incident} and
-	 *         {@link SensorPlacement}.
+	 *         {@link Set} of {@link Sensor}s
 	 */
-	public long penaltyReduction(IncidentCascade incident,
-			SensorPlacement sensors) {
+	protected long penaltyReduction(IncidentCascade incident,
+			Set<Sensor> sensors) {
 		long result = MAX_PENALTY;
 		for (Sensor sensor : sensors) {
 			result = Math.min(result, evaluator.evaluate(sensor, incident

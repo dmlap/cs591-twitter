@@ -402,7 +402,6 @@ public class PullData {
 		// Get users info
 		System.out.println("Pull follower data");
 		User follower = User.createUser(null, "", -1);
-		
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(apply(SHOW_XML, idval.toString()));
 		httpget.getParams().setParameter("http.socket.timeout", new Integer(10000));
