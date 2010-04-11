@@ -6,6 +6,7 @@ package edu.bu.celf;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
 
+
 /**
  * An interface for objects which specify a probability distribution over
  * {@link Incident}s.
