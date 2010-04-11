@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import edu.bu.celf.FixedCostAppraiser;
@@ -75,7 +74,6 @@ public class GreedySensorSelectorTest {
 	}
 	
 	@Test
-	@Ignore("not implemented")
 	public void selectsWithinBudgetWithNonHomogoneousSensorCost() {
 		assertEquals(Collections.singleton(userB), new GreedySensorSelector(
 				new SensorAppraiser() {

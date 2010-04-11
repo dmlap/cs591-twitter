@@ -3,7 +3,6 @@
  */
 package edu.bu.celf;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.NavigableSet;
@@ -36,8 +35,6 @@ public class GreedySensorSelector implements SensorSelector {
 	};
 
 	private final SensorAppraiser appraiser;
-	private final NavigableSet<Pair<Sensor, Long>> benefits = new TreeSet<Pair<Sensor, Long>>(
-			BENEFIT);
 	private final Penalty penalty;
 	private final IncidentDistribution distribution;
 
@@ -48,56 +45,42 @@ public class GreedySensorSelector implements SensorSelector {
 		this.distribution = distribution;
 	}
 
+	/* (non-Javadoc)
+	 * @see edu.bu.celf.SensorSelector#select(int, java.util.Set, edu.bu.CascadeSet)
+	 */
 	@Override
 	public Set<Sensor> select(int budget, Set<Sensor> sensors,
 			CascadeSet cascades) {
+		final NavigableSet<Pair<Sensor, Long>> benefits = new TreeSet<Pair<Sensor, Long>>(
+				BENEFIT);
+		final Set<Sensor> selected = new HashSet<Sensor>(budget);
 		// initialize benefits cache
 		for(Sensor sensor : sensors) {
 			benefits.add(new Pair<Sensor, Long>(sensor, MIN_BENEFIT));
 		}
-		int cost = 0;
-		Set<Sensor> unselectedSensors = new HashSet<Sensor>(sensors);
-		Set<Sensor> selectedSensors = new HashSet<Sensor>();
-		Set<Sensor> selected;
-		do {
-			selected = new GreedySelectorRound().select(budget - cost, unselectedSensors, cascades);
-			assert selected.size() <= 1 : "GreedySelectorRound should select no more than one sensor per iteration";
-			for(Sensor sensor: selected) {
-				cost += appraiser.appraise(sensor);
-			}
-			unselectedSensors.removeAll(selected);
-			selectedSensors.addAll(selected);
-		} while(selected.size() > 0);
-		return selectedSensors;
-	}
-	
-	/**
-	 * An object which performs a single round of the
-	 * {@link GreedySensorSelector} algorithm.
-	 * 
-	 * @author dml
-	 * 
-	 */
-	private class GreedySelectorRound implements SensorSelector {
-		@Override
-		public Set<Sensor> select(int budget, Set<Sensor> sensors,
-				CascadeSet cascades) {
-			if(budget <= 0) {
-				return Collections.emptySet();
-			}
-			Pair<Sensor, Long> focus, head;
-			for(int i = 0; i < sensors.size(); i++) {
-				head = benefits.pollFirst();
-				focus = new Pair<Sensor, Long>(head.first, penalty
-						.penaltyReduction(distribution, cascades, sensors));
-				benefits.add(focus);
-				if(BENEFIT.compare(head, focus) >= 0) {
-					// focus is the best sensor we can find
-					return appraiser.appraise(focus.first) > budget ? Collections.<Sensor>emptySet() : Collections.singleton(focus.first);
+		OUTER: while(budget > 0) {
+			while(!benefits.isEmpty()) {
+				Pair<Sensor, Long> benefit = benefits.first();
+				benefits.remove(benefit);
+				int cost = appraiser.appraise(benefit.first); 
+				if(cost > budget) {
+					// this sensor is too expensive, skip it
+					continue;
 				}
+				selected.add(benefit.first);
+				long update = penalty.penaltyReduction(distribution, cascades, selected);
+				if(benefits.isEmpty() || update > benefits.first().second) {
+					// found the best possible sensor for this iteration
+					budget -= cost; 
+					continue OUTER;
+				}
+				selected.remove(benefit.first);
+				benefits.add(new Pair<Sensor, Long>(benefit.first, update));
 			}
-			// every available sensor is unsuitable
-			return Collections.emptySet();
+			// no acceptable sensor found, we're done
+			break;
 		}
+		assert budget >= 0;
+		return selected;
 	}
 }
