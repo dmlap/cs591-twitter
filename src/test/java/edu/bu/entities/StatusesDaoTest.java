@@ -7,7 +7,6 @@ import org.junit.AfterClass;
 import org.junit.Test;
 
 public class StatusesDaoTest {
-	
 	@AfterClass
 	public static void resetTransactions() {
 		HibernateUtil.reset();

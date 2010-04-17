@@ -1,7 +1,11 @@
 package edu.bu.entities;
 
+import java.util.List;
+
 import org.hibernate.classic.Session;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.joda.time.DateTime;
 
 import edu.bu.entities.HibernateUtil.HibernateStatement;
 
@@ -45,5 +49,58 @@ public class StatusDao implements Dao<Status, Long> {
 				return null;
 			}
 		});
-	}	
+	}
+	
+	@Override
+	public void update(final Status target, final Status... targets) {
+		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
+			@Override
+			public Void run(Session session) {
+				session.update(target);
+				for(Status t : targets) {
+					session.update(t);
+				}
+				return null;
+			}
+		});
+	}
+	
+	/**
+	 * Gets the newest status ID for the specified user
+	 * 
+	 * @param id
+	 * 			- The ID of the user to pull for
+	 * @return The Status containing the max status ID
+	 */
+	public Status getMaxStatusForUser(final long id) {
+		return HibernateUtil
+				.doWithSession(new HibernateStatement<Status>() {
+					@Override
+					public Status run(Session session) {
+						Long statusId = (Long) session.createCriteria(Status.class).add
+							(Restrictions.eq("userId", id)).
+							setProjection(Projections.max("id")).uniqueResult();
+						return Status.createStatus(statusId, new Long(-1), "", new DateTime(2010, 1, 1, 12, 0, 0, 0), false);
+					}
+				});
+	}
+	
+	/**
+	 * Gets a batch of unprocessed users
+	 * 
+	 * @param count
+	 * 			- The max number of users to pull
+	 * @return A list of statuses
+	 */
+	public List<Status> getUnprocessed(final int count) {
+		return HibernateUtil
+		.doWithSession(new HibernateStatement<List<Status>>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public List<Status> run(Session session) {
+				return session.createCriteria(Status.class).add(
+						Restrictions.gt("processed", false)).setMaxResults(count).list();
+			}
+		});
+	}
 }

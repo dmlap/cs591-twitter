@@ -40,4 +40,13 @@ public interface Dao<T, K> {
 	 */
 	void delete(T target, T... targets);
 
+	/**
+	 * Updates the persistent representation of the specified <code>T</code>
+	 * 
+	 * @param target
+	 * 			- The object to be updated
+	 * @param targets
+	 * 			- Any additional objects to be updated
+	 */
+	void update(T target, T... targets);
 }

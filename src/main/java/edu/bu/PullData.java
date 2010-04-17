@@ -5,8 +5,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.Set;
 
@@ -25,7 +28,10 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatterBuilder;
 
+import edu.bu.entities.LastID;
+import edu.bu.entities.LastIDDao;
 import edu.bu.entities.Status;
+import edu.bu.entities.StatusDao;
 import edu.bu.entities.User;
 import edu.bu.entities.UserDao;
 
@@ -55,6 +61,9 @@ public class PullData {
 	private static final float SAMPLE_PCT = 0.20f;
 	private static final int MAX_SAMPLES = 50;
 	private static final int MAX_SAMPLED_USERS = 100;
+	private static final int MAX_USERS_FOR_STATUSES = 150; //150 Rate limit an hour
+	private static final int MAX_STATUSES_TO_PULL = 200;  //Twitter limit
+	private static final int MAX_UNPROCESSED_USERS = 10;
 	private final String username;
 	
 	public PullData(String username) {
@@ -85,7 +94,7 @@ public class PullData {
 			.append(PARAM_ASSIGNMENT)
 			.append(count);
 		
-		if (sinceID > 0) {
+		if (sinceID != null) {
 		 retval.append(PARAM_SEPARATOR)
 			.append(SINCE_ID_PARAM)
 			.append(PARAM_ASSIGNMENT)
@@ -159,7 +168,9 @@ public class PullData {
 			System.out.println(user.getDegree());
 		}*/
 		
-		new PullData("dlapalomento").sampleUsers();
+		//new PullData("dlapalomento").sampleUsers();
+		
+		new PullData("dlapalomento").getStatuses();
 	}
 	
 	/**
@@ -442,18 +453,144 @@ public class PullData {
 		return follower;
 	}
 	
-	public Set<Status> getUserStatuses(Long userID) throws ClientProtocolException, IOException {
-		Set<Status> statuses = new HashSet<Status>();
+	/**
+	 * Pulls statuses for a block of users and saves them
+	 * 
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
+	public void getStatuses() throws ClientProtocolException, IOException, DocumentException {
+		// Pull LastID
+		LastIDDao lastIdDao = new LastIDDao();
+		LastID lastid = lastIdDao.get("UserID");
+		
+		// If null create and save
+		if (lastid == null) {
+			lastid = LastID.createLastID(0L, "UserID");
+			lastIdDao.save(lastid);
+		}
+
+		// Pull 150 users
+		UserDao userDao = new UserDao();
+		List<User> users = userDao.findWithIdGt(lastid.getId(), MAX_USERS_FOR_STATUSES);
+		
+		// Pull statuses
+		StatusDao statusDao = new StatusDao();
+		ListIterator<User> it = users.listIterator();
+		while (it.hasNext()) {
+			List<Status> statuses = getUserStatuses(it.next().getId());
+			if (statuses.size() > 0) {
+				Status status = statuses.get(0);
+				statuses.remove(0);
+				
+				if (statuses.size() > 1)
+					statusDao.save(status, statuses.toArray(new Status[statuses.size()]));
+				else
+					statusDao.save(status);
+				
+				System.out.println(String.valueOf(statuses.size()) + " statuses saved");
+			}
+		}
+		
+		// Save last user ID
+		lastIdDao.delete(lastid);
+		User maxuser = userDao.findMaxId();
+		if (maxuser.getId() != users.get(users.size()-1).getId()) {
+			lastid = LastID.createLastID(users.get(users.size()-1).getId(), "UserID");
+		} else {
+			lastid = LastID.createLastID(0L, "UserID");
+		}
+		lastIdDao.save(lastid);
+		
+		System.out.print("Saved statuses for ");
+		System.out.print(users.size());
+		System.out.print(" users");
+	}
+	
+	/**
+	 * Pulls statuses for the specified user
+	 * 
+	 * @param userId
+	 * 			- The user ID of the user to get data for
+	 * @return A list of statuses
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws DocumentException
+	 */
+	private List<Status> getUserStatuses(Long userId) throws ClientProtocolException, IOException, DocumentException {
+		List<Status> statuses = new ArrayList<Status>();
+		
+		StatusDao dao = new StatusDao();
+		System.out.println("Get max status for user " + userId.toString());
+		Status maxstatus = dao.getMaxStatusForUser(userId);
+		Long sinceID;
+		
+		if (maxstatus == null)
+			sinceID = 0L;
+		else
+			sinceID = maxstatus.getId();
 		
 		HttpClient httpClient = new DefaultHttpClient();
-		byte[] status = httpClient.execute(new HttpGet(apply(USER_FOLLOWER_IDS_XML, userID, -1)),
-				new ResponseHandler<byte[]>() {
-					@Override
-					public byte[] handleResponse(HttpResponse response)
+		HttpGet httpget = new HttpGet(apply(USER_TIMELINE_XML, userId, sinceID, MAX_STATUSES_TO_PULL));
+		httpget.getParams().setParameter("http.socket.timeout", new Integer(10000));
+		byte[] statusxml;
+		
+		try {
+			statusxml = httpClient.execute(httpget,
+					new ResponseHandler<byte[]>() {
+						@Override
+						public byte[] handleResponse(HttpResponse response)
 							throws ClientProtocolException, IOException {
-						return EntityUtils.toByteArray(response.getEntity());
-					}
-				});
+							return EntityUtils.toByteArray(response.getEntity());
+						}
+					});
+		} catch (SocketTimeoutException ex) {
+			System.err.println("Get user data timeout");
+			return statuses;
+		} catch (SocketException ex) {
+			System.err.println("Get user data timeout");
+			return statuses;
+		}
+			
+		Long id = null;
+		String statustxt = "";
+		DateTime statusdate = null;
+		
+		// Open the doc
+		SAXReader reader = new SAXReader();
+		try {
+			Document document = reader.read(new ByteArrayInputStream(statusxml));
+			System.out.println("Parse status data");
+			
+			// Parse user id's
+			Element root = document.getRootElement();
+			for (@SuppressWarnings("unchecked")Iterator<Element> itstatus = root.elementIterator(); itstatus.hasNext(); ) {
+		 		Element status = itstatus.next();
+		 		for (@SuppressWarnings("unchecked")Iterator<Element> itdetail = status.elementIterator(); itdetail.hasNext(); ) {
+		 			Element detail = itdetail.next();
+	
+			 		if (detail.getName().compareTo("created_at") == 0) {
+			 			statusdate = this.parseUTCDate(detail.getText());
+			 		} else if (detail.getName().compareTo("id") == 0) {
+			 			id = Long.parseLong(detail.getText());
+			 		} else if (detail.getName().compareTo("text") == 0) {
+			 			statustxt = detail.getText();
+			 		
+			 			statuses.add(Status.createStatus(id, userId, statustxt, statusdate, false));
+			 			
+		 				id = null;
+		 				statustxt = "";
+		 				statusdate = null;
+			 						
+		 				break;
+		 			}
+		 		}
+	 		}
+		} catch (Exception ex) {
+			System.err.println("Error parsing");
+			ex.printStackTrace();
+		}
 		
 		return statuses;
 	}
@@ -484,4 +621,30 @@ public class PullData {
 		.toFormatter().parseDateTime(utcdate);
 	}
 
+	public void processStatuses() {
+		// Pull unprocessed statuses
+		StatusDao statusDao = new StatusDao();
+		List<Status> unprocessed = statusDao.getUnprocessed(MAX_UNPROCESSED_USERS);
+		
+		while (unprocessed.size() > 0) {
+			ListIterator<Status> it = unprocessed.listIterator();
+			while (it.hasNext()) {
+				Status status = it.next();
+				
+				// Parse status
+				if (status.getStatus().contains("#")) {
+					String[] words = status.getStatus().split(" ");
+					for(int i = 0; i < words.length; i++) {
+						String word = words[i];
+						if (word.charAt(0) == '#') {
+							
+						}
+					}
+				}
+			}
+			
+			// Refill unprocessed
+			unprocessed = statusDao.getUnprocessed(MAX_UNPROCESSED_USERS);
+		}
+	}
 }
