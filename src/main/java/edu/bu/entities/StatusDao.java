@@ -99,7 +99,19 @@ public class StatusDao implements Dao<Status, Long> {
 			@Override
 			public List<Status> run(Session session) {
 				return session.createCriteria(Status.class).add(
-						Restrictions.gt("processed", false)).setMaxResults(count).list();
+						Restrictions.eq("processed", false)).setMaxResults(count).list();
+			}
+		});
+	}
+	
+	public List<Status> getStartersForHash(final String key) {
+		return HibernateUtil.doWithSession(new HibernateStatement<List<Status>>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public List<Status> run(Session session) {
+				return (List<Status>) session.createQuery("select s from Hash h join h.statuses s where h.hash = ? order by s.statusDate desc")
+					.setString(0, key)
+					.setMaxResults(5).list();
 			}
 		});
 	}

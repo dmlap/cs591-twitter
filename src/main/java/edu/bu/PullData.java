@@ -3,6 +3,7 @@ package edu.bu;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -28,12 +31,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatterBuilder;
 
-import edu.bu.entities.LastID;
-import edu.bu.entities.LastIDDao;
-import edu.bu.entities.Status;
-import edu.bu.entities.StatusDao;
-import edu.bu.entities.User;
-import edu.bu.entities.UserDao;
+import edu.bu.entities.*;
 
 /**
  * Pulls XML data from twitter and stores it in the filesystem.
@@ -170,7 +168,20 @@ public class PullData {
 		
 		//new PullData("dlapalomento").sampleUsers();
 		
-		new PullData("dlapalomento").getStatuses();
+		//new PullData("dlapalomento").getStatuses();
+		
+		//new PullData("dlapalomento").processStatuses();
+		
+		StatusDao dao = new StatusDao();
+		List<Status> statuses = dao.getStartersForHash("ff");
+		System.out.println(statuses.size());
+		ListIterator<Status> itstatuses = statuses.listIterator();
+		while (itstatuses.hasNext()) {
+			Status status = itstatuses.next();
+			System.out.println(status.getId());
+			System.out.println(status.getStatus());
+			System.out.println(status.getStatusDate());
+		}
 	}
 	
 	/**
@@ -621,10 +632,18 @@ public class PullData {
 		.toFormatter().parseDateTime(utcdate);
 	}
 
-	public void processStatuses() {
+	/**
+	 * Processes statuses parsing out hashes
+	 * 
+	 * @throws IOException
+	 */
+	public void processStatuses() throws IOException {
 		// Pull unprocessed statuses
 		StatusDao statusDao = new StatusDao();
 		List<Status> unprocessed = statusDao.getUnprocessed(MAX_UNPROCESSED_USERS);
+		Stemmer stemmer = new Stemmer();
+		HashDao dao = new HashDao();
+		StatusDao statusdao = new StatusDao();
 		
 		while (unprocessed.size() > 0) {
 			ListIterator<Status> it = unprocessed.listIterator();
@@ -633,14 +652,42 @@ public class PullData {
 				
 				// Parse status
 				if (status.getStatus().contains("#")) {
-					String[] words = status.getStatus().split(" ");
+					String[] words = status.getStatus().split("\\s+");
 					for(int i = 0; i < words.length; i++) {
 						String word = words[i];
 						if (word.charAt(0) == '#') {
+							// Get hash stem
+							TokenStream stream = stemmer.tokenStream("hash", new StringReader(word));
+							TermAttribute termAttrib = stream.addAttribute(TermAttribute.class);
 							
+							stream.reset();
+							
+							if (stream.incrementToken()) {
+								String stem = termAttrib.term();
+								Hash hash = dao.get(stem);
+								
+								if (hash == null) {
+									// Add new hash
+									List<Status> statuses = new ArrayList<Status>();
+									statuses.add(status);
+									hash = Hash.createHash(stem, statuses);
+									dao.save(hash);
+								} else {
+									// Update status list for hash
+									hash.getStatuses().add(status);
+									dao.update(hash);
+								}
+							}
+							
+							stream.end();
+							stream.close();
 						}
 					}
 				}
+				
+				// Mark the status as processed
+				status.setProcessed(true);
+				statusdao.update(status);
 			}
 			
 			// Refill unprocessed
