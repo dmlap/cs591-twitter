@@ -5,6 +5,7 @@ package edu.bu.celf;
 
 import java.util.Set;
 
+import org.joda.time.Instant;
 import org.joda.time.Interval;
 
 import edu.bu.CascadeSet;
@@ -20,7 +21,7 @@ import edu.bu.Sensor;
  */
 public class Penalty {
 	public static final long MAX_PENALTY = Long.MAX_VALUE;
-	public static final Penalty INTERVAL_PENALTY = new Penalty(
+	public static final Penalty DETECTION_TIME = new Penalty(
 			new SensorEvaluator() {
 				@Override
 				public long evaluate(Sensor sensor, Interval detectionInterval) {
@@ -28,6 +29,22 @@ public class Penalty {
 							- detectionInterval.toDurationMillis();
 				}
 			});
+	public static final Penalty detectionLikelihood(final Instant horizon) {
+		return new Penalty(new SensorEvaluator() {
+			@Override
+			public long evaluate(Sensor sensor, Interval detectionInterval) {
+				return horizon.isAfter(detectionInterval.getEndMillis()) ? 1L : 0L;
+			}
+		});
+	}
+	public static final Penalty populationAffected(final IncidentCascade cascade) {
+		return new Penalty(new SensorEvaluator() {
+			@Override
+			public long evaluate(Sensor sensor, Interval detectionInterval) {
+				return -cascade.predecessorCount(sensor);
+			}
+		});
+	}
 
 	private final SensorEvaluator evaluator;
 

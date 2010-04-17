@@ -45,7 +45,7 @@ public class GreedySensorSelectorTest {
 	@Test
 	public void selectsHighestValueSensor() {
 		Set<Sensor> selection = new GreedySensorSelector(unitCost,
-				Penalty.INTERVAL_PENALTY, certitude).select(1, allSensors,
+				Penalty.DETECTION_TIME, certitude).select(1, allSensors,
 				singleCascade);
 
 		assertEquals(1, selection.size());
@@ -55,21 +55,21 @@ public class GreedySensorSelectorTest {
 	@Test
 	public void selectsNoSensorsWithInsufficientBudget() {
 		assertEquals(0, new GreedySensorSelector(unitCost,
-				Penalty.INTERVAL_PENALTY, certitude).select(0, allSensors,
+				Penalty.DETECTION_TIME, certitude).select(0, allSensors,
 				singleCascade).size());
 	}
 
 	@Test
 	public void selectsAllSensorsWithSufficientBudget() {
 		assertEquals(allSensors, new GreedySensorSelector(unitCost,
-				Penalty.INTERVAL_PENALTY, certitude).select(allSensors.size(),
+				Penalty.DETECTION_TIME, certitude).select(allSensors.size(),
 				allSensors, singleCascade));
 	}
 	
 	@Test
 	public void selectsWithinBudget() {
 		assertEquals(Collections.singleton(userA), new GreedySensorSelector(
-				doubleCost, Penalty.INTERVAL_PENALTY, certitude).select(3,
+				doubleCost, Penalty.DETECTION_TIME, certitude).select(3,
 				allSensors, singleCascade));
 	}
 	
@@ -84,7 +84,7 @@ public class GreedySensorSelectorTest {
 						}
 						return 1;
 					}
-				}, Penalty.INTERVAL_PENALTY, certitude).select(1, allSensors,
+				}, Penalty.DETECTION_TIME, certitude).select(1, allSensors,
 				singleCascade));
 	}
 

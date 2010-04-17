@@ -33,5 +33,25 @@ public class IncidentCascadeTest {
 		IncidentCascade cascade = new IncidentCascade(new Incident(start, new TwitterUser("start"), "i"), new Incident(detected, user, "i"));
 		assertEquals(interval, cascade.detectionDelay(user));
 	}
+	
+	@Test
+	public void predecessorCount() {
+		TwitterUser user0 = new TwitterUser("zero");
+		TwitterUser user1 = new TwitterUser("one");
+		TwitterUser user2 = new TwitterUser("two");
+		TwitterUser user3 = new TwitterUser("three");
+		TwitterUser user4 = new TwitterUser("four");
+		IncidentCascade cascade = new IncidentCascade(
+				new Incident(new DateTime(), user0, "i"), 
+				new Incident(new DateTime().plusDays(1), user1, "i"),
+				new Incident(new DateTime().plusDays(2), user2, "i"),
+				new Incident(new DateTime().plusDays(3), user3, "i"));
+		
+		assertEquals(0, cascade.predecessorCount(user0));
+		assertEquals(1, cascade.predecessorCount(user1));
+		assertEquals(2, cascade.predecessorCount(user2));
+		assertEquals(3, cascade.predecessorCount(user3));
+		assertEquals(4, cascade.predecessorCount(user4));
+	}
 
 }

@@ -3,12 +3,18 @@
  */
 package edu.bu;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Map.Entry;
 
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
@@ -21,13 +27,30 @@ import org.joda.time.Interval;
  * 
  */
 public class IncidentCascade {
-	private static final Sensor ENDTIME_SENSOR = new Sensor() {
+	private static final Interval MAX_INTERVAL = new Interval(0L, Long.MAX_VALUE);
+	private static final Comparator<Incident> FIRST_DETECTION = new Comparator<Incident>() {
 		@Override
-		public String getId() {
-			return "**Dummy sensor**";
+		public int compare(Incident lhs, Incident rhs) {
+			return lhs.getDateTime().compareTo(rhs.getDateTime());
 		}
 	};
-	private static final Interval MAX_INTERVAL = new Interval(0L, Long.MAX_VALUE);
+	
+	/**
+	 * Returns a new {@link List} by concatenating its two arguments
+	 * 
+	 * @param <T>
+	 *            - the type of elements of the resulting {@link List}
+	 * @param lhs
+	 *            - the first elements
+	 * @param rhs
+	 *            - the second elements
+	 * @return a new {@link List}
+	 */
+	private static <T> List<T> join(T[] lhs, T... rhs) {
+		List<T> result = new LinkedList<T>(Arrays.asList(lhs));
+		result.addAll(Arrays.asList(rhs));
+		return result;
+	}
 	
 	/**
 	 * Returns an {@link IncidentCascade} consisting of a single
@@ -46,7 +69,7 @@ public class IncidentCascade {
 
 	private final String identifier;
 	private final Map<Sensor, NavigableSet<DateTime>> incidents;
-	private final Incident source;
+	private final NavigableSet<Incident> detections;
 
 	/**
 	 * Construct a new {@link IncidentCascade} for the given
@@ -65,19 +88,14 @@ public class IncidentCascade {
 			throw new IllegalArgumentException("IncidentCascades must be constructed with at least one Incident.");
 		}
 		this.identifier = identifier;
-		this.incidents = new HashMap<Sensor, NavigableSet<DateTime>>(incidents
-				.size());
-		Incident source = new Incident(new DateTime(Long.MAX_VALUE), ENDTIME_SENSOR , identifier);
+		this.incidents = new HashMap<Sensor, NavigableSet<DateTime>>(incidents.size());
+		this.detections = new TreeSet<Incident>(FIRST_DETECTION);
 		for (Sensor sensor : incidents.keySet()) {
 			NavigableSet<DateTime> occurrences = new TreeSet<DateTime>(
 					incidents.get(sensor));
 			this.incidents.put(sensor, occurrences);
-			if (source.getDateTime().isAfter(occurrences.first())) {
-				source = new Incident(occurrences.first(), sensor,
-						this.identifier);
-			}
+			this.detections.add(new Incident(occurrences.first(), sensor, identifier));
 		}
-		this.source = source;
 	}
 	
 	/**
@@ -95,7 +113,7 @@ public class IncidentCascade {
 		}
 		this.identifier = identifier;
 		this.incidents = new HashMap<Sensor, NavigableSet<DateTime>>(incidents.size());
-		Incident source = new Incident(new DateTime(Long.MAX_VALUE), ENDTIME_SENSOR , identifier);
+		this.detections = new TreeSet<Incident>(FIRST_DETECTION);
 		for(Incident incident : incidents) {
 			if (!identifier.equals(incident.getIdentifier())) {
 				throw new IllegalArgumentException(
@@ -109,11 +127,10 @@ public class IncidentCascade {
 			}
 			NavigableSet<DateTime> times = this.incidents.get(incident.getSensor());
 			times.add(incident.getDateTime());
-			if(incident.getDateTime().isBefore(source.getDateTime())) {
-				source = incident;
-			}
 		}
-		this.source = source;
+		for(Entry<Sensor, NavigableSet<DateTime>> entry : this.incidents.entrySet()) {
+			this.detections.add(new Incident(entry.getValue().first(), entry.getKey(), identifier));
+		}
 	}
 
 	/**
@@ -127,27 +144,7 @@ public class IncidentCascade {
 	 *            {@link Incident#getIdentifier() identifier}.
 	 */
 	public IncidentCascade(Incident incident, Incident... incidents) {
-		this.identifier = incident.getIdentifier();
-		this.incidents = new HashMap<Sensor, NavigableSet<DateTime>>(incidents.length + 1);
-		Incident source = incident;
-		this.incidents.put(source.getSensor(), new TreeSet<DateTime>(Collections.singleton(source.getDateTime())));
-		for (Incident i : incidents) {
-			if (!this.identifier.equals(i.getIdentifier())) {
-				throw new IllegalArgumentException(
-						"All members of an IncidentCascade must have the same identifier.  Expecting \""
-								+ this.identifier
-								+ "\" but found \""
-								+ i.getIdentifier() + "\"");
-			}
-			if(!this.incidents.containsKey(i.getSensor())) {
-				this.incidents.put(i.getSensor(), new TreeSet<DateTime>());
-			}
-			if(source.getDateTime().isAfter(i.getDateTime())) {
-				source = i;
-			}
-			this.incidents.get(i.getSensor()).add(i.getDateTime());
-		}
-		this.source = source;
+		this(incident.getIdentifier(), new HashSet<Incident>(join(incidents, incident)));
 	}
 
 	/**
@@ -158,7 +155,7 @@ public class IncidentCascade {
 	 *         {@link IncidentCascade}.
 	 */
 	public Incident getSource() {
-		return source;
+		return detections.first();
 	}
 	
 	public Interval detectionDelay(Sensor sensor) {
@@ -166,11 +163,29 @@ public class IncidentCascade {
 			return MAX_INTERVAL;
 		}
 		DateTime first = incidents.get(sensor).first();
-		return new Interval(source.getDateTime(), first);
+		return new Interval(getSource().getDateTime(), first);
 	}
 
 	public String getIdentifier() {
 		return identifier;
+	}
+
+	/**
+	 * Returns the number of {@link Sensor}s that have detected an
+	 * {@link Incident} before the specified {@link Sensor}.
+	 * 
+	 * @param sensor
+	 *            - the {@link Sensor} to query
+	 * @return the number of {@link Sensor}s that have detected an
+	 *         {@link Incident} before the specified {@link Sensor}.
+	 */
+	public int predecessorCount(Sensor sensor) {
+		if(!incidents.containsKey(sensor)) {
+			// never detected at the specified sensor
+			return this.detections.size();
+		}
+		DateTime firstDetection = incidents.get(sensor).first();
+		return detections.headSet(new Incident(firstDetection, sensor, identifier)).size();
 	}
 
 }
