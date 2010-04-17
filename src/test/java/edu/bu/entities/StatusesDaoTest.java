@@ -2,26 +2,11 @@ package edu.bu.entities;
 
 import static org.junit.Assert.assertEquals;
 
-import org.hibernate.Transaction;
 import org.joda.time.DateTime;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import edu.bu.entities.HibernateUtil.AfterTransaction;
-
 public class StatusesDaoTest {
-	
-	@BeforeClass
-	public static void setupTransactions() {
-		HibernateUtil.afterTransaction = new AfterTransaction() {
-			@Override
-			public void after(Transaction transaction) {
-				transaction.rollback();
-			}
-		};
-	}
-	
 	@AfterClass
 	public static void resetTransactions() {
 		HibernateUtil.reset();

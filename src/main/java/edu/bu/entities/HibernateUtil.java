@@ -11,6 +11,8 @@ public class HibernateUtil {
 			.addPackage("edu.bu.entities")
 			.addAnnotatedClass(User.class)
 			.addAnnotatedClass(Status.class)
+			.addAnnotatedClass(LastID.class)
+			.addAnnotatedClass(Hash.class)
 			// db properties
 			.setProperty("hibernate.connection.driver_class", "org.h2.Driver")
 			.setProperty("hibernate.connection.url", "jdbc:h2:~/cs591-twitter;AUTO_SERVER=TRUE")
