@@ -11,7 +11,7 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public interface SensorAppraiser {
+public interface SensorAppraiser<K extends Comparable<K>> {
 
 	/**
 	 * Returns the cost of a {@link Sensor}
@@ -20,6 +20,6 @@ public interface SensorAppraiser {
 	 *            - the {@link Sensor} to appraise
 	 * @return the cost of a {@link Sensor}
 	 */
-	int appraise(Sensor sensor);
+	int appraise(Sensor<K> sensor);
 
 }

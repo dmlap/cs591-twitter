@@ -24,7 +24,7 @@ public interface IncidentDistribution {
 	 *            - the {@link Incident} to query
 	 * @return the probability of the occurrence of a specified {@link Incident}
 	 */
-	double probability(Incident incident);
+	<K extends Comparable<K>> double probability(Incident<K> incident);
 	
 	/**
 	 * Returns the probability of the occurrence of a specified
@@ -35,6 +35,6 @@ public interface IncidentDistribution {
 	 * @return the probability of the occurrence of a specified
 	 *         {@link IncidentCascade}
 	 */
-	double probability(IncidentCascade cascade);
+	<K extends Comparable<K>> double probability(IncidentCascade<K> cascade);
 
 }

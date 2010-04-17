@@ -9,13 +9,13 @@ package edu.bu;
  * @author dml
  * 
  */
-public interface Sensor {
+public interface Sensor<K extends Comparable<K>> {
 	
 	/**
 	 * Returns the identifier for this {@link Sensor}
 	 * 
 	 * @return the identifier for this {@link Sensor}
 	 */
-	String getId();
+	K getId();
 
 }

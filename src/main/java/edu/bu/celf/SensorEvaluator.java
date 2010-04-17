@@ -15,7 +15,7 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public interface SensorEvaluator {
+public interface SensorEvaluator<K extends Comparable<K>> {
 
 	/**
 	 * Returns the score for detecting an {@link Incident} at a {@link Sensor}
@@ -28,6 +28,6 @@ public interface SensorEvaluator {
 	 * @return the score for detecting an {@link Incident} at a {@link Sensor}
 	 *         with the given {@link Interval}.
 	 */
-	long evaluate(Sensor sensor, Interval detectionInterval);
+	long evaluate(Sensor<K> sensor, Interval detectionInterval);
 
 }

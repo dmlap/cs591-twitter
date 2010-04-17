@@ -3,22 +3,24 @@ package edu.bu.celf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
+
 import org.junit.Test;
 
-import edu.bu.TwitterUser;
+import edu.bu.TestUser;
 
 public class SensorPlacementTest {
 	
 	@Test
 	public void containsTrue() {
-		TwitterUser s = new TwitterUser("user");
-		assertTrue(new SensorPlacement(s).contains(s));
+		TestUser s = new TestUser("user");
+		assertTrue(new SensorPlacement<String>(Collections.singleton(s)).contains(s));
 	}
 
 	@Test
 	public void containsFalse() {
-		TwitterUser s = new TwitterUser("user");
-		assertFalse(new SensorPlacement(new TwitterUser("not-user")).contains(s));
+		TestUser s = new TestUser("user");
+		assertFalse(new SensorPlacement<String>(Collections.singleton(new TestUser("not-user"))).contains(s));
 	}
 
 }
