@@ -3,7 +3,6 @@ package edu.bu.entities;
 import java.util.List;
 
 import org.hibernate.classic.Session;
-import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 
 import edu.bu.entities.HibernateUtil.HibernateStatement;
