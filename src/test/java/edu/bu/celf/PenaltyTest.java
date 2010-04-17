@@ -17,24 +17,24 @@ import org.junit.Test;
 import edu.bu.CascadeSet;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
-import edu.bu.TestUser;
+import edu.bu.SimpleUser;
 
 public class PenaltyTest {
 
 	@Test
 	public void notDetectedIncidentEqualsZeroReduction() {
-		Incident<String> incident = new Incident<String>(new DateTime(), new TestUser(
+		Incident<String> incident = new Incident<String>(new DateTime(), new SimpleUser(
 				"user-a"), "undetected-incident");
-		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new TestUser("user-b")));
+		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new SimpleUser("user-b")));
 		assertEquals(0, Penalty.<String>detectionTime().penaltyReduction(IncidentCascade
 				.singleton(incident), sensors));
 	}
 
 	@Test
 	public void detectedIncidentReductionProportionalToDetectionTime() {
-		TestUser userA = new TestUser("userA");
-		TestUser userB = new TestUser("userB");
-		TestUser userC = new TestUser("userC");
+		SimpleUser userA = new SimpleUser("userA");
+		SimpleUser userB = new SimpleUser("userB");
+		SimpleUser userC = new SimpleUser("userC");
 		SensorPlacement<String> onlyA = new SensorPlacement<String>(singleton(userA));
 		SensorPlacement<String> onlyB = new SensorPlacement<String>(singleton(userB));
 		SensorPlacement<String> onlyC = new SensorPlacement<String>(singleton(userC));
@@ -65,8 +65,8 @@ public class PenaltyTest {
 	@Test
 	public void notDetectedSetEqualsZeroReduction() {
 		CascadeSet<String> incidents = new CascadeSet<String>(Collections.singleton(new Incident<String>(new DateTime(),
-				new TestUser("user-a"), "undetected incident")));
-		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new TestUser("user-b")));
+				new SimpleUser("user-a"), "undetected incident")));
+		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new SimpleUser("user-b")));
 		IncidentDistribution dist = new IncidentDistribution() {
 			@Override
 			public <K extends Comparable<K>> double probability(Incident<K> incident) {
@@ -85,7 +85,7 @@ public class PenaltyTest {
 	@Test
 	public void detectedCascadeReductionProportionalToIncidentProbability() {
 		DateTime now = new DateTime();
-		TestUser userA = new TestUser("user-a");
+		SimpleUser userA = new SimpleUser("user-a");
 		CascadeSet<String> highlyProbable = new CascadeSet<String>(Collections.singleton(new Incident<String>(now, userA,
 				"important incident")));
 		CascadeSet<String> highlyUnlikely = new CascadeSet<String>(Collections.singleton(new Incident<String>(now, userA,
@@ -116,8 +116,8 @@ public class PenaltyTest {
 	@Test
 	public void detectionLikelihoodWithHorizon() {
 		Instant horizon = new DateTime().plusDays(2).toInstant();
-		TestUser userA = new TestUser("user-a");
-		TestUser userB = new TestUser("user-b");
+		SimpleUser userA = new SimpleUser("user-a");
+		SimpleUser userB = new SimpleUser("user-b");
 		List<Incident<String>> is = new ArrayList<Incident<String>>();
 		is.add(new Incident<String>(new DateTime().plusDays(1), userA,
 				"incident"));
@@ -144,8 +144,8 @@ public class PenaltyTest {
 	
 	@Test
 	public void populationAffectedWithCascadeSet() {
-		TestUser userA = new TestUser("user-a");
-		TestUser userB = new TestUser("user-b");
+		SimpleUser userA = new SimpleUser("user-a");
+		SimpleUser userB = new SimpleUser("user-b");
 		List<Incident<String>> is = new ArrayList<Incident<String>>();
 		is.add(new Incident<String>(new DateTime().plusDays(1), userA,
 				"incident"));

@@ -19,8 +19,8 @@ import edu.bu.celf.SensorAppraiser;
 
 public class GreedySensorSelectorTest {
 	private final Set<Sensor<String>> allSensors = new HashSet<Sensor<String>>(2);
-	private TestUser userA = new TestUser("a");
-	private TestUser userB = new TestUser("b");
+	private SimpleUser userA = new SimpleUser("a");
+	private SimpleUser userB = new SimpleUser("b");
 	private final DateTime dateTime = new DateTime();
 	@SuppressWarnings("unchecked")
 	private final CascadeSet<String> singleCascade = new CascadeSet<String>(Arrays.asList(new Incident<String>(

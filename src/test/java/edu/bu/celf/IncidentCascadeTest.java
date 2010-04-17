@@ -10,18 +10,18 @@ import org.junit.Test;
 
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
-import edu.bu.TestUser;
+import edu.bu.SimpleUser;
 
 public class IncidentCascadeTest {
 
 	@Test
 	public void getSource() {
 		DateTime time0 = new DateTime();
-		TestUser userA = new TestUser("a");
+		SimpleUser userA = new SimpleUser("a");
 		HashSet<Incident<String>> incidents = new HashSet<Incident<String>>();
 		incidents.add(new Incident<String>(time0, userA, "tag"));
 		incidents.add(new Incident<String>(
-				new DateTime(time0.getMillis() + 10L), new TestUser("b"),
+				new DateTime(time0.getMillis() + 10L), new SimpleUser("b"),
 				"tag"));
 		IncidentCascade<String> cascade = new IncidentCascade<String>("tag",
 				incidents);
@@ -35,9 +35,9 @@ public class IncidentCascadeTest {
 		DateTime start = new DateTime();
 		DateTime detected = new DateTime(start.getMillis() + 100L);
 		Interval interval = new Interval(start, detected);
-		TestUser user = new TestUser("detector");
+		SimpleUser user = new SimpleUser("detector");
 		HashSet<Incident<String>> incidents = new HashSet<Incident<String>>();
-		incidents.add(new Incident<String>(start, new TestUser("start"), "i"));
+		incidents.add(new Incident<String>(start, new SimpleUser("start"), "i"));
 		incidents.add(new Incident<String>(detected, user, "i"));
 		IncidentCascade<String> cascade = new IncidentCascade<String>("i", incidents);
 		assertEquals(interval, cascade.detectionDelay(user));
@@ -45,11 +45,11 @@ public class IncidentCascadeTest {
 	
 	@Test
 	public void predecessorCount() {
-		TestUser user0 = new TestUser("zero");
-		TestUser user1 = new TestUser("one");
-		TestUser user2 = new TestUser("two");
-		TestUser user3 = new TestUser("three");
-		TestUser user4 = new TestUser("four");
+		SimpleUser user0 = new SimpleUser("zero");
+		SimpleUser user1 = new SimpleUser("one");
+		SimpleUser user2 = new SimpleUser("two");
+		SimpleUser user3 = new SimpleUser("three");
+		SimpleUser user4 = new SimpleUser("four");
 		HashSet<Incident<String>> incidents = new HashSet<Incident<String>>();
 		incidents.add(new Incident<String>(new DateTime(), user0, "i"));
 		incidents.add(new Incident<String>(new DateTime().plusDays(1), user1, "i"));

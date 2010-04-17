@@ -9,10 +9,10 @@ package edu.bu;
  * @author dml
  * 
  */
-public class TestUser implements Sensor<String> {
+public class SimpleUser implements Sensor<String> {
 	private final String username;
 
-	public TestUser(String username) {
+	public SimpleUser(String username) {
 		this.username = username;
 	}
 
