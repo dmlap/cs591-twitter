@@ -1,8 +1,14 @@
 package edu.bu.celf;
 
-import static edu.bu.celf.Penalty.*;
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
@@ -11,36 +17,39 @@ import org.junit.Test;
 import edu.bu.CascadeSet;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
-import edu.bu.TwitterUser;
+import edu.bu.SimpleUser;
 
 public class PenaltyTest {
 
 	@Test
 	public void notDetectedIncidentEqualsZeroReduction() {
-		Incident incident = new Incident(new DateTime(), new TwitterUser(
+		Incident<String> incident = new Incident<String>(new DateTime(), new SimpleUser(
 				"user-a"), "undetected-incident");
-		SensorPlacement sensors = new SensorPlacement(new TwitterUser("user-b"));
-		assertEquals(0, DETECTION_TIME.penaltyReduction(IncidentCascade
+		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new SimpleUser("user-b")));
+		assertEquals(0, Penalty.<String>detectionTime().penaltyReduction(IncidentCascade
 				.singleton(incident), sensors));
 	}
 
 	@Test
 	public void detectedIncidentReductionProportionalToDetectionTime() {
-		TwitterUser userA = new TwitterUser("userA");
-		TwitterUser userB = new TwitterUser("userB");
-		TwitterUser userC = new TwitterUser("userC");
-		SensorPlacement onlyA = new SensorPlacement(userA);
-		SensorPlacement onlyB = new SensorPlacement(userB);
-		SensorPlacement onlyC = new SensorPlacement(userC);
+		SimpleUser userA = new SimpleUser("userA");
+		SimpleUser userB = new SimpleUser("userB");
+		SimpleUser userC = new SimpleUser("userC");
+		SensorPlacement<String> onlyA = new SensorPlacement<String>(singleton(userA));
+		SensorPlacement<String> onlyB = new SensorPlacement<String>(singleton(userB));
+		SensorPlacement<String> onlyC = new SensorPlacement<String>(singleton(userC));
 		DateTime time0 = new DateTime();
 		DateTime time1 = new DateTime(time0.getMillis() + 1);
 
-		IncidentCascade cascade = new IncidentCascade(new Incident(time0,
-				userA, "id"), new Incident(time1, userB, "id"));
+		Set<Incident<String>> incidents = new HashSet<Incident<String>>();
+		incidents.add(new Incident<String>(time0,
+				userA, "id"));
+		incidents.add(new Incident<String>(time1, userB, "id"));
+		IncidentCascade<String> cascade = new IncidentCascade<String>("id", incidents);
 
-		long atTime0 = DETECTION_TIME.penaltyReduction(cascade, onlyA);
-		long atTime1 = DETECTION_TIME.penaltyReduction(cascade, onlyB);
-		long atNever = DETECTION_TIME.penaltyReduction(cascade, onlyC);
+		long atTime0 = Penalty.<String>detectionTime().penaltyReduction(cascade, onlyA);
+		long atTime1 = Penalty.<String>detectionTime().penaltyReduction(cascade, onlyB);
+		long atNever = Penalty.<String>detectionTime().penaltyReduction(cascade, onlyC);
 
 		assertTrue(
 				"Penalty reduction for detecting at time 0 should be greater than detection at time 1.  Time 0: "
@@ -55,36 +64,36 @@ public class PenaltyTest {
 
 	@Test
 	public void notDetectedSetEqualsZeroReduction() {
-		CascadeSet incidents = new CascadeSet(new Incident(new DateTime(),
-				new TwitterUser("user-a"), "undetected incident"));
-		SensorPlacement sensors = new SensorPlacement(new TwitterUser("user-b"));
+		CascadeSet<String> incidents = new CascadeSet<String>(Collections.singleton(new Incident<String>(new DateTime(),
+				new SimpleUser("user-a"), "undetected incident")));
+		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new SimpleUser("user-b")));
 		IncidentDistribution dist = new IncidentDistribution() {
 			@Override
-			public double probability(Incident incident) {
+			public <K extends Comparable<K>> double probability(Incident<K> incident) {
 				return 1.0D;
 			}
 
 			@Override
-			public double probability(IncidentCascade cascade) {
+			public <K extends Comparable<K>> double probability(IncidentCascade<K> cascade) {
 				return 1.0D;
 			}
 		};
-		assertEquals(0, DETECTION_TIME.penaltyReduction(dist, incidents,
+		assertEquals(0, Penalty.<String>detectionTime().penaltyReduction(dist, incidents,
 				sensors));
 	}
 
 	@Test
 	public void detectedCascadeReductionProportionalToIncidentProbability() {
 		DateTime now = new DateTime();
-		TwitterUser userA = new TwitterUser("user-a");
-		CascadeSet highlyProbable = new CascadeSet(new Incident(now, userA,
-				"important incident"));
-		CascadeSet highlyUnlikely = new CascadeSet(new Incident(now, userA,
-				"trivial incident"));
-		SensorPlacement sensors = new SensorPlacement(userA);
+		SimpleUser userA = new SimpleUser("user-a");
+		CascadeSet<String> highlyProbable = new CascadeSet<String>(Collections.singleton(new Incident<String>(now, userA,
+				"important incident")));
+		CascadeSet<String> highlyUnlikely = new CascadeSet<String>(Collections.singleton(new Incident<String>(now, userA,
+				"trivial incident")));
+		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(userA));
 		IncidentDistribution dist = new IncidentDistribution() {
 			@Override
-			public double probability(IncidentCascade cascade) {
+			public <K extends Comparable<K>> double probability(IncidentCascade<K> cascade) {
 				if ("important incident".equals(cascade.getIdentifier())) {
 					return 0.95D;
 				}
@@ -92,66 +101,72 @@ public class PenaltyTest {
 			}
 
 			@Override
-			public double probability(Incident incident) {
+			public <K extends Comparable<K>> double probability(Incident<K> incident) {
 				if ("important incident".equals(incident.getIdentifier())) {
 					return 0.95D;
 				}
 				return 0.1D;
 			}
 		};
-		assertGreaterThan(DETECTION_TIME.penaltyReduction(dist, highlyProbable,
-				sensors), DETECTION_TIME.penaltyReduction(dist, highlyUnlikely,
+		assertGreaterThan(Penalty.<String>detectionTime().penaltyReduction(dist, highlyProbable,
+				sensors), Penalty.<String>detectionTime().penaltyReduction(dist, highlyUnlikely,
 				sensors));
 	}
 
 	@Test
 	public void detectionLikelihoodWithHorizon() {
 		Instant horizon = new DateTime().plusDays(2).toInstant();
-		TwitterUser userA = new TwitterUser("user-a");
-		TwitterUser userB = new TwitterUser("user-b");
-		CascadeSet incidents = new CascadeSet(new Incident(new DateTime().plusDays(1),
-				userA, "incident"), new Incident(new DateTime().plusDays(3),
-				userB, "incident"));
-		SensorPlacement notDetected = new SensorPlacement(userB);
-		SensorPlacement detected = new SensorPlacement(userA);
+		SimpleUser userA = new SimpleUser("user-a");
+		SimpleUser userB = new SimpleUser("user-b");
+		List<Incident<String>> is = new ArrayList<Incident<String>>();
+		is.add(new Incident<String>(new DateTime().plusDays(1), userA,
+				"incident"));
+		is.add(new Incident<String>(new DateTime().plusDays(3), userB,
+				"incident"));
+		CascadeSet<String> incidents = new CascadeSet<String>(is);
+		SensorPlacement<String> notDetected = new SensorPlacement<String>(singleton(userB));
+		SensorPlacement<String> detected = new SensorPlacement<String>(singleton(userA));
 		IncidentDistribution dist = new IncidentDistribution() {
 			@Override
-			public double probability(Incident incident) {
+			public <K extends Comparable<K>> double probability(Incident<K> incident) {
 				return 1.0D;
 			}
 
 			@Override
-			public double probability(IncidentCascade cascade) {
+			public <K extends Comparable<K>> double probability(IncidentCascade<K> cascade) {
 				return 1.0D;
 			}
 		};
-		assertGreaterThan(detectionLikelihood(horizon).penaltyReduction(dist,
-				incidents, detected), detectionLikelihood(horizon)
+		assertGreaterThan(Penalty.<String>detectionLikelihood(horizon).penaltyReduction(dist,
+				incidents, detected), Penalty.<String>detectionLikelihood(horizon)
 				.penaltyReduction(dist, incidents, notDetected));
 	}
 	
 	@Test
 	public void populationAffectedWithCascadeSet() {
-		TwitterUser userA = new TwitterUser("user-a");
-		TwitterUser userB = new TwitterUser("user-b");
-		CascadeSet cascades = new CascadeSet(new Incident(new DateTime().plusDays(1),
-				userA, "incident"), new Incident(new DateTime().plusDays(2),
-				userB, "incident"));
-		SensorPlacement oneAffected = new SensorPlacement(userA);
-		SensorPlacement twoAffected = new SensorPlacement(userB);
+		SimpleUser userA = new SimpleUser("user-a");
+		SimpleUser userB = new SimpleUser("user-b");
+		List<Incident<String>> is = new ArrayList<Incident<String>>();
+		is.add(new Incident<String>(new DateTime().plusDays(1), userA,
+				"incident"));
+		is.add(new Incident<String>(new DateTime().plusDays(2), userB,
+				"incident"));
+		CascadeSet<String> cascades = new CascadeSet<String>(is);
+		SensorPlacement<String> oneAffected = new SensorPlacement<String>(singleton(userA));
+		SensorPlacement<String> twoAffected = new SensorPlacement<String>(singleton(userB));
 		IncidentDistribution dist = new IncidentDistribution() {
 			@Override
-			public double probability(Incident incident) {
+			public <K extends Comparable<K>> double probability(Incident<K> incident) {
 				return 1D;
 			}
 
 			@Override
-			public double probability(IncidentCascade cascade) {
+			public <K extends Comparable<K>> double probability(IncidentCascade<K> cascade) {
 				return 1D;
 			}
 		};
-		assertGreaterThan(populationAffected(cascades.iterator().next()).penaltyReduction(dist, cascades,
-				oneAffected), populationAffected(cascades.iterator().next()).penaltyReduction(dist,
+		assertGreaterThan(Penalty.<String>populationAffected(cascades.iterator().next()).penaltyReduction(dist, cascades,
+				oneAffected), Penalty.<String>populationAffected(cascades.iterator().next()).penaltyReduction(dist,
 				cascades, twoAffected));
 	}
 

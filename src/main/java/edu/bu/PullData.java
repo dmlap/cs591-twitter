@@ -490,7 +490,7 @@ public class PullData {
 		StatusDao statusDao = new StatusDao();
 		ListIterator<User> it = users.listIterator();
 		while (it.hasNext()) {
-			List<Status> statuses = getUserStatuses(it.next().getId());
+			List<Status> statuses = getUserStatuses(it.next());
 			if (statuses.size() > 0) {
 				Status status = statuses.get(0);
 				statuses.remove(0);
@@ -524,17 +524,18 @@ public class PullData {
 	 * 
 	 * @param userId
 	 * 			- The user ID of the user to get data for
+	 * @param user TODO
 	 * @return A list of statuses
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 * @throws DocumentException
 	 */
-	private List<Status> getUserStatuses(Long userId) throws ClientProtocolException, IOException, DocumentException {
+	private List<Status> getUserStatuses(User user) throws ClientProtocolException, IOException, DocumentException {
 		List<Status> statuses = new ArrayList<Status>();
 		
 		StatusDao dao = new StatusDao();
-		System.out.println("Get max status for user " + userId.toString());
-		Status maxstatus = dao.getMaxStatusForUser(userId);
+		System.out.println("Get max status for user " + user.getId().toString());
+		Status maxstatus = dao.getMaxStatusForUser(user.getId());
 		Long sinceID;
 		
 		if (maxstatus == null)
@@ -543,7 +544,7 @@ public class PullData {
 			sinceID = maxstatus.getId();
 		
 		HttpClient httpClient = new DefaultHttpClient();
-		HttpGet httpget = new HttpGet(apply(USER_TIMELINE_XML, userId, sinceID, MAX_STATUSES_TO_PULL));
+		HttpGet httpget = new HttpGet(apply(USER_TIMELINE_XML, user.getId(), sinceID, MAX_STATUSES_TO_PULL));
 		httpget.getParams().setParameter("http.socket.timeout", new Integer(10000));
 		byte[] statusxml;
 		
@@ -588,7 +589,7 @@ public class PullData {
 			 		} else if (detail.getName().compareTo("text") == 0) {
 			 			statustxt = detail.getText();
 			 		
-			 			statuses.add(Status.createStatus(id, userId, statustxt, statusdate, false));
+			 			statuses.add(Status.createStatus(id, user, statustxt, statusdate, false));
 			 			
 		 				id = null;
 		 				statustxt = "";

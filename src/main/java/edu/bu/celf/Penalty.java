@@ -19,36 +19,38 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public class Penalty {
+public class Penalty<K extends Comparable<K>> {
 	public static final long MAX_PENALTY = Long.MAX_VALUE;
-	public static final Penalty DETECTION_TIME = new Penalty(
-			new SensorEvaluator() {
+	public static final <K extends Comparable<K>> Penalty<K> detectionTime() {
+		return new Penalty<K>(
+			new SensorEvaluator<K>() {
 				@Override
-				public long evaluate(Sensor sensor, Interval detectionInterval) {
+				public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
 					return Long.MAX_VALUE
 							- detectionInterval.toDurationMillis();
 				}
 			});
-	public static final Penalty detectionLikelihood(final Instant horizon) {
-		return new Penalty(new SensorEvaluator() {
+	}
+	public static final <K extends Comparable<K>> Penalty<K> detectionLikelihood(final Instant horizon) {
+		return new Penalty<K>(new SensorEvaluator<K>() {
 			@Override
-			public long evaluate(Sensor sensor, Interval detectionInterval) {
+			public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
 				return horizon.isAfter(detectionInterval.getEndMillis()) ? 1L : 0L;
 			}
 		});
 	}
-	public static final Penalty populationAffected(final IncidentCascade cascade) {
-		return new Penalty(new SensorEvaluator() {
+	public static final <K extends Comparable<K>> Penalty<K> populationAffected(final IncidentCascade<K> cascade) {
+		return new Penalty<K>(new SensorEvaluator<K>() {
 			@Override
-			public long evaluate(Sensor sensor, Interval detectionInterval) {
+			public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
 				return -cascade.predecessorCount(sensor);
 			}
 		});
 	}
 
-	private final SensorEvaluator evaluator;
+	private final SensorEvaluator<K> evaluator;
 
-	public Penalty(SensorEvaluator evaluator) {
+	public Penalty(SensorEvaluator<K> evaluator) {
 		this.evaluator = evaluator;
 	}
 
@@ -72,9 +74,9 @@ public class Penalty {
 	 *         given a {@link Set} of {@link Sensor}s.
 	 */
 	public long penaltyReduction(IncidentDistribution distribution,
-			CascadeSet cascades, Set<Sensor> sensors) {
+			CascadeSet<K> cascades, Set<Sensor<K>> sensors) {
 		long result = 0L;
-		for (IncidentCascade cascade : cascades) {
+		for (IncidentCascade<K> cascade : cascades) {
 			result += distribution.probability(cascade)
 					* penaltyReduction(cascade, sensors);
 		}
@@ -92,10 +94,10 @@ public class Penalty {
 	 * @return the reduction in penalty for a given {@link Incident} and
 	 *         {@link Set} of {@link Sensor}s
 	 */
-	protected long penaltyReduction(IncidentCascade incident,
-			Set<Sensor> sensors) {
+	protected long penaltyReduction(IncidentCascade<K> incident,
+			Set<Sensor<K>> sensors) {
 		long result = MAX_PENALTY;
-		for (Sensor sensor : sensors) {
+		for (Sensor<K> sensor : sensors) {
 			result = Math.min(result, evaluator.evaluate(sensor, incident
 					.detectionDelay(sensor)));
 		}

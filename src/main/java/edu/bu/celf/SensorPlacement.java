@@ -17,12 +17,12 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public class SensorPlacement implements Set<Sensor> {
-	private final Map<String, Sensor> sensors;
+public class SensorPlacement<K extends Comparable<K>> implements Set<Sensor<K>> {
+	private final Map<K, Sensor<K>> sensors;
 
-	public SensorPlacement(Sensor... sensors) {
-		this.sensors = new HashMap<String, Sensor>(sensors.length);
-		for (Sensor sensor : sensors) {
+	public SensorPlacement(Iterable<? extends Sensor<K>> sensors) {
+		this.sensors = new HashMap<K, Sensor<K>>();
+		for (Sensor<K> sensor : sensors) {
 			this.sensors.put(sensor.getId(), sensor);
 		}
 	}
@@ -36,17 +36,17 @@ public class SensorPlacement implements Set<Sensor> {
 	 * @return whether this {@link SensorPlacement} includes the specified
 	 *         {@link Sensor}
 	 */
-	public boolean contains(Sensor sensor) {
+	public boolean contains(Sensor<K> sensor) {
 		return sensors.containsKey(sensor.getId());
 	}
 
 	@Override
-	public boolean add(Sensor e) {
+	public boolean add(Sensor<K> e) {
 		throw new UnsupportedOperationException("SensorPlacements are immutable");
 	}
 
 	@Override
-	public boolean addAll(Collection<? extends Sensor> c) {
+	public boolean addAll(Collection<? extends Sensor<K>> c) {
 		throw new UnsupportedOperationException("SensorPlacements are immutable");
 	}
 
@@ -71,7 +71,7 @@ public class SensorPlacement implements Set<Sensor> {
 	}
 
 	@Override
-	public Iterator<Sensor> iterator() {
+	public Iterator<Sensor<K>> iterator() {
 		return sensors.values().iterator();
 	}
 

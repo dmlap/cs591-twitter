@@ -4,15 +4,15 @@
 package edu.bu;
 
 /**
- * A {@link Sensor} for Twitter-based {@link Incident}s.
+ * A {@link Sensor} for test {@link Incident}s.
  * 
  * @author dml
  * 
  */
-public class TwitterUser implements Sensor {
+public class SimpleUser implements Sensor<String> {
 	private final String username;
 
-	public TwitterUser(String username) {
+	public SimpleUser(String username) {
 		this.username = username;
 	}
 

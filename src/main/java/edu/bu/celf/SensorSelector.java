@@ -15,7 +15,7 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public interface SensorSelector {
+public interface SensorSelector<K extends Comparable<K>> {
 
 	/**
 	 * Returns a {@link Set subset} of sensors with cost no greater than
@@ -29,6 +29,6 @@ public interface SensorSelector {
 	 * @return a {@link Set subset} of sensors with cost no greater than
 	 *         <code>budget</code>
 	 */
-	Set<Sensor> select(int budget, Set<Sensor> sensors, CascadeSet cascades);
+	Set<Sensor<K>> select(int budget, Set<Sensor<K>> sensors, CascadeSet<K> cascades);
 
 }

@@ -2,6 +2,7 @@ package edu.bu.entities;
 
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -32,7 +33,7 @@ public class Hash {
 		this.hash = hash;
 	}
 	
-	@ManyToMany(fetch=FetchType.EAGER)
+	@ManyToMany(fetch=FetchType.EAGER, cascade=CascadeType.ALL)
 	public List<Status> getStatuses() {
 		return this.statuses;
 	}

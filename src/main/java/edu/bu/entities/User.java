@@ -3,10 +3,12 @@ package edu.bu.entities;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import edu.bu.Sensor;
+
 @Entity
-public class User {
+public class User implements Sensor<Long> {
 	private Long id;
-	private String name;
+ 	private String name;
 	private int degree;
 
  	private User() {}

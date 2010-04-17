@@ -2,23 +2,29 @@ package edu.bu.celf;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.HashSet;
+
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.junit.Test;
 
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
-import edu.bu.TwitterUser;
+import edu.bu.SimpleUser;
 
 public class IncidentCascadeTest {
 
 	@Test
 	public void getSource() {
 		DateTime time0 = new DateTime();
-		TwitterUser userA = new TwitterUser("a");
-		IncidentCascade cascade = new IncidentCascade(new Incident(time0, userA, "tag"),
-				new Incident(new DateTime(time0.getMillis() + 10L),
-						new TwitterUser("b"), "tag"));
+		SimpleUser userA = new SimpleUser("a");
+		HashSet<Incident<String>> incidents = new HashSet<Incident<String>>();
+		incidents.add(new Incident<String>(time0, userA, "tag"));
+		incidents.add(new Incident<String>(
+				new DateTime(time0.getMillis() + 10L), new SimpleUser("b"),
+				"tag"));
+		IncidentCascade<String> cascade = new IncidentCascade<String>("tag",
+				incidents);
 		assertEquals(time0, cascade.getSource().getDateTime());
 		assertEquals(userA, cascade.getSource().getSensor());
 		assertEquals(cascade.getIdentifier(), cascade.getSource().getIdentifier());
@@ -29,23 +35,27 @@ public class IncidentCascadeTest {
 		DateTime start = new DateTime();
 		DateTime detected = new DateTime(start.getMillis() + 100L);
 		Interval interval = new Interval(start, detected);
-		TwitterUser user = new TwitterUser("detector");
-		IncidentCascade cascade = new IncidentCascade(new Incident(start, new TwitterUser("start"), "i"), new Incident(detected, user, "i"));
+		SimpleUser user = new SimpleUser("detector");
+		HashSet<Incident<String>> incidents = new HashSet<Incident<String>>();
+		incidents.add(new Incident<String>(start, new SimpleUser("start"), "i"));
+		incidents.add(new Incident<String>(detected, user, "i"));
+		IncidentCascade<String> cascade = new IncidentCascade<String>("i", incidents);
 		assertEquals(interval, cascade.detectionDelay(user));
 	}
 	
 	@Test
 	public void predecessorCount() {
-		TwitterUser user0 = new TwitterUser("zero");
-		TwitterUser user1 = new TwitterUser("one");
-		TwitterUser user2 = new TwitterUser("two");
-		TwitterUser user3 = new TwitterUser("three");
-		TwitterUser user4 = new TwitterUser("four");
-		IncidentCascade cascade = new IncidentCascade(
-				new Incident(new DateTime(), user0, "i"), 
-				new Incident(new DateTime().plusDays(1), user1, "i"),
-				new Incident(new DateTime().plusDays(2), user2, "i"),
-				new Incident(new DateTime().plusDays(3), user3, "i"));
+		SimpleUser user0 = new SimpleUser("zero");
+		SimpleUser user1 = new SimpleUser("one");
+		SimpleUser user2 = new SimpleUser("two");
+		SimpleUser user3 = new SimpleUser("three");
+		SimpleUser user4 = new SimpleUser("four");
+		HashSet<Incident<String>> incidents = new HashSet<Incident<String>>();
+		incidents.add(new Incident<String>(new DateTime(), user0, "i"));
+		incidents.add(new Incident<String>(new DateTime().plusDays(1), user1, "i"));
+		incidents.add(new Incident<String>(new DateTime().plusDays(2), user2, "i"));
+		incidents.add(new Incident<String>(new DateTime().plusDays(3), user3, "i"));
+		IncidentCascade<String> cascade = new IncidentCascade<String>("i", incidents);
 		
 		assertEquals(0, cascade.predecessorCount(user0));
 		assertEquals(1, cascade.predecessorCount(user1));

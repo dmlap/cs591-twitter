@@ -11,9 +11,9 @@ import org.joda.time.DateTime;
  * @author dml
  * 
  */
-public class Incident {
+public class Incident<K extends Comparable<K>> {
 	private final DateTime dateTime;
-	private final Sensor sensor;
+	private final Sensor<K> sensor;
 	private final String identifier;
 
 	/**
@@ -26,7 +26,7 @@ public class Incident {
 	 *            - an identifier by which this {@link Incident} can be
 	 *            distinguished
 	 */
-	public Incident(DateTime dateTime, Sensor sensor, String identifier) {
+	public Incident(DateTime dateTime, Sensor<K> sensor, String identifier) {
 		this.dateTime = dateTime;
 		this.sensor = sensor;
 		this.identifier = identifier;
@@ -36,7 +36,7 @@ public class Incident {
 		return dateTime;
 	}
 
-	public Sensor getSensor() {
+	public Sensor<K> getSensor() {
 		return sensor;
 	}
 

@@ -3,13 +3,9 @@
  */
 package edu.bu;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -26,30 +22,16 @@ import org.joda.time.Interval;
  * @author dml
  * 
  */
-public class IncidentCascade {
+public class IncidentCascade<K extends Comparable<K>> {
 	private static final Interval MAX_INTERVAL = new Interval(0L, Long.MAX_VALUE);
-	private static final Comparator<Incident> FIRST_DETECTION = new Comparator<Incident>() {
-		@Override
-		public int compare(Incident lhs, Incident rhs) {
-			return lhs.getDateTime().compareTo(rhs.getDateTime());
-		}
-	};
-	
-	/**
-	 * Returns a new {@link List} by concatenating its two arguments
-	 * 
-	 * @param <T>
-	 *            - the type of elements of the resulting {@link List}
-	 * @param lhs
-	 *            - the first elements
-	 * @param rhs
-	 *            - the second elements
-	 * @return a new {@link List}
-	 */
-	private static <T> List<T> join(T[] lhs, T... rhs) {
-		List<T> result = new LinkedList<T>(Arrays.asList(lhs));
-		result.addAll(Arrays.asList(rhs));
-		return result;
+
+	private static final <K extends Comparable<K>> Comparator<Incident<K>> firstDetection() {
+		return new Comparator<Incident<K>>() {
+			@Override
+			public int compare(Incident<K> lhs, Incident<K> rhs) {
+				return lhs.getDateTime().compareTo(rhs.getDateTime());
+			}
+		};
 	}
 	
 	/**
@@ -61,15 +43,15 @@ public class IncidentCascade {
 	 * @return an {@link IncidentCascade} consisting of a single
 	 *         {@link Incident}.
 	 */
-	public static IncidentCascade singleton(Incident incident) {
-		return new IncidentCascade(incident.getIdentifier(), Collections
+	public static <K extends Comparable<K>> IncidentCascade<K> singleton(Incident<K> incident) {
+		return new IncidentCascade<K>(incident.getIdentifier(), Collections
 				.singletonMap(incident.getSensor(), Collections
 						.singleton(incident.getDateTime())));
 	}
 
 	private final String identifier;
-	private final Map<Sensor, NavigableSet<DateTime>> incidents;
-	private final NavigableSet<Incident> detections;
+	private final Map<Sensor<K>, NavigableSet<DateTime>> incidents;
+	private final NavigableSet<Incident<K>> detections;
 
 	/**
 	 * Construct a new {@link IncidentCascade} for the given
@@ -83,18 +65,18 @@ public class IncidentCascade {
 	 *            detection times}.
 	 */
 	public IncidentCascade(String identifier,
-			Map<Sensor, Set<DateTime>> incidents) {
+			Map<Sensor<K>, Set<DateTime>> incidents) {
 		if(incidents.size() < 1) {
 			throw new IllegalArgumentException("IncidentCascades must be constructed with at least one Incident.");
 		}
 		this.identifier = identifier;
-		this.incidents = new HashMap<Sensor, NavigableSet<DateTime>>(incidents.size());
-		this.detections = new TreeSet<Incident>(FIRST_DETECTION);
-		for (Sensor sensor : incidents.keySet()) {
+		this.incidents = new HashMap<Sensor<K>, NavigableSet<DateTime>>(incidents.size());
+		this.detections = new TreeSet<Incident<K>>(IncidentCascade.<K>firstDetection());
+		for (Sensor<K> sensor : incidents.keySet()) {
 			NavigableSet<DateTime> occurrences = new TreeSet<DateTime>(
 					incidents.get(sensor));
 			this.incidents.put(sensor, occurrences);
-			this.detections.add(new Incident(occurrences.first(), sensor, identifier));
+			this.detections.add(new Incident<K>(occurrences.first(), sensor, identifier));
 		}
 	}
 	
@@ -107,14 +89,14 @@ public class IncidentCascade {
 	 * @param incidents
 	 *            - the {@link Incident}s to form this {@link IncidentCascade}
 	 */
-	public IncidentCascade(String identifier, Set<Incident> incidents) {
+	public IncidentCascade(String identifier, Set<Incident<K>> incidents) {
 		if(incidents.size() < 1) {
 			throw new IllegalArgumentException("IncidentCascades must be constructed with at least one Incident.");
 		}
 		this.identifier = identifier;
-		this.incidents = new HashMap<Sensor, NavigableSet<DateTime>>(incidents.size());
-		this.detections = new TreeSet<Incident>(FIRST_DETECTION);
-		for(Incident incident : incidents) {
+		this.incidents = new HashMap<Sensor<K>, NavigableSet<DateTime>>(incidents.size());
+		this.detections = new TreeSet<Incident<K>>(IncidentCascade.<K>firstDetection());
+		for(Incident<K> incident : incidents) {
 			if (!identifier.equals(incident.getIdentifier())) {
 				throw new IllegalArgumentException(
 						"IncidentCascade constructed with identifier \""
@@ -128,23 +110,9 @@ public class IncidentCascade {
 			NavigableSet<DateTime> times = this.incidents.get(incident.getSensor());
 			times.add(incident.getDateTime());
 		}
-		for(Entry<Sensor, NavigableSet<DateTime>> entry : this.incidents.entrySet()) {
-			this.detections.add(new Incident(entry.getValue().first(), entry.getKey(), identifier));
+		for(Entry<Sensor<K>, NavigableSet<DateTime>> entry : this.incidents.entrySet()) {
+			this.detections.add(new Incident<K>(entry.getValue().first(), entry.getKey(), identifier));
 		}
-	}
-
-	/**
-	 * Constructs a new {@link IncidentCascade} from a set of {@link Incident}s.
-	 * 
-	 * @param incident
-	 *            - an {@link Incident} that is a member of this
-	 *            {@link IncidentCascade}
-	 * @param incidents
-	 *            - a variable number of {@link Incident}s, all with the same
-	 *            {@link Incident#getIdentifier() identifier}.
-	 */
-	public IncidentCascade(Incident incident, Incident... incidents) {
-		this(incident.getIdentifier(), new HashSet<Incident>(join(incidents, incident)));
 	}
 
 	/**
@@ -154,11 +122,11 @@ public class IncidentCascade {
 	 * @return the earliest occurring {@link Incident} for this
 	 *         {@link IncidentCascade}.
 	 */
-	public Incident getSource() {
+	public Incident<K> getSource() {
 		return detections.first();
 	}
 	
-	public Interval detectionDelay(Sensor sensor) {
+	public Interval detectionDelay(Sensor<K> sensor) {
 		if(!incidents.containsKey(sensor)) {
 			return MAX_INTERVAL;
 		}
@@ -179,13 +147,13 @@ public class IncidentCascade {
 	 * @return the number of {@link Sensor}s that have detected an
 	 *         {@link Incident} before the specified {@link Sensor}.
 	 */
-	public int predecessorCount(Sensor sensor) {
+	public int predecessorCount(Sensor<K> sensor) {
 		if(!incidents.containsKey(sensor)) {
 			// never detected at the specified sensor
 			return this.detections.size();
 		}
 		DateTime firstDetection = incidents.get(sensor).first();
-		return detections.headSet(new Incident(firstDetection, sensor, identifier)).size();
+		return detections.headSet(new Incident<K>(firstDetection, sensor, identifier)).size();
 	}
 
 }

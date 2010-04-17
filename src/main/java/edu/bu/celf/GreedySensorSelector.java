@@ -19,26 +19,28 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public class GreedySensorSelector implements SensorSelector {
+public class GreedySensorSelector<K extends Comparable<K>> implements SensorSelector<K> {
 	private static final Long MIN_BENEFIT = Long.MIN_VALUE;
-	private static final Comparator<Pair<Sensor, Long>> BENEFIT = new Comparator<Pair<Sensor, Long>>() {
-		@Override
-		public int compare(Pair<Sensor, Long> o1, Pair<Sensor, Long> o2) {
-			if (o1.first.equals(o2.first)) {
-				return 0;
+	private static final <K extends Comparable<K>> Comparator<Pair<Sensor<K>, Long>> benefit() {
+		return new Comparator<Pair<Sensor<K>, Long>>() {
+			@Override
+			public int compare(Pair<Sensor<K>, Long> o1, Pair<Sensor<K>, Long> o2) {
+				if (o1.first.equals(o2.first)) {
+					return 0;
+				}
+				if(o1.second.equals(o2.second)) {
+					return o1.first.getId().compareTo(o2.first.getId());
+				}
+				return o1.second.compareTo(o2.second);
 			}
-			if(o1.second.equals(o2.second)) {
-				return o1.first.getId().compareTo(o2.first.getId());
-			}
-			return o1.second.compareTo(o2.second);
-		}
-	};
+		};
+	}
 
-	private final SensorAppraiser appraiser;
-	private final Penalty penalty;
+	private final SensorAppraiser<K> appraiser;
+	private final Penalty<K> penalty;
 	private final IncidentDistribution distribution;
 
-	public GreedySensorSelector(SensorAppraiser appraiser, Penalty penalty,
+	public GreedySensorSelector(SensorAppraiser<K> appraiser, Penalty<K> penalty,
 			IncidentDistribution distribution) {
 		this.appraiser = appraiser;
 		this.penalty = penalty;
@@ -49,18 +51,18 @@ public class GreedySensorSelector implements SensorSelector {
 	 * @see edu.bu.celf.SensorSelector#select(int, java.util.Set, edu.bu.CascadeSet)
 	 */
 	@Override
-	public Set<Sensor> select(int budget, Set<Sensor> sensors,
-			CascadeSet cascades) {
-		final NavigableSet<Pair<Sensor, Long>> benefits = new TreeSet<Pair<Sensor, Long>>(
-				BENEFIT);
-		final Set<Sensor> selected = new HashSet<Sensor>(budget);
+	public Set<Sensor<K>> select(int budget, Set<Sensor<K>> sensors,
+			CascadeSet<K> cascades) {
+		final NavigableSet<Pair<Sensor<K>, Long>> benefits = new TreeSet<Pair<Sensor<K>, Long>>(
+				GreedySensorSelector.<K>benefit());
+		final Set<Sensor<K>> selected = new HashSet<Sensor<K>>(budget);
 		// initialize benefits cache
-		for(Sensor sensor : sensors) {
-			benefits.add(new Pair<Sensor, Long>(sensor, MIN_BENEFIT));
+		for(Sensor<K> sensor : sensors) {
+			benefits.add(new Pair<Sensor<K>, Long>(sensor, MIN_BENEFIT));
 		}
 		OUTER: while(budget > 0) {
 			while(!benefits.isEmpty()) {
-				Pair<Sensor, Long> benefit = benefits.first();
+				Pair<Sensor<K>, Long> benefit = benefits.first();
 				benefits.remove(benefit);
 				int cost = appraiser.appraise(benefit.first); 
 				if(cost > budget) {
@@ -75,7 +77,7 @@ public class GreedySensorSelector implements SensorSelector {
 					continue OUTER;
 				}
 				selected.remove(benefit.first);
-				benefits.add(new Pair<Sensor, Long>(benefit.first, update));
+				benefits.add(new Pair<Sensor<K>, Long>(benefit.first, update));
 			}
 			// no acceptable sensor found, we're done
 			break;

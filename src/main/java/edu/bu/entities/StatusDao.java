@@ -80,7 +80,7 @@ public class StatusDao implements Dao<Status, Long> {
 						Long statusId = (Long) session.createCriteria(Status.class).add
 							(Restrictions.eq("userId", id)).
 							setProjection(Projections.max("id")).uniqueResult();
-						return Status.createStatus(statusId, new Long(-1), "", new DateTime(2010, 1, 1, 12, 0, 0, 0), false);
+						return Status.createStatus(statusId, User.createUser(-1L, "name", 0), "", new DateTime(2010, 1, 1, 12, 0, 0, 0), false);
 					}
 				});
 	}

@@ -11,7 +11,7 @@ import edu.bu.Sensor;
  * @author dml
  * 
  */
-public class FixedCostAppraiser implements SensorAppraiser {
+public class FixedCostAppraiser<K extends Comparable<K>> implements SensorAppraiser<K> {
 	private final int cost;
 
 	public FixedCostAppraiser(int cost) {
@@ -24,7 +24,7 @@ public class FixedCostAppraiser implements SensorAppraiser {
 	 * @see edu.bu.celf.SensorAppraiser#appraise(edu.bu.Sensor)
 	 */
 	@Override
-	public int appraise(Sensor sensor) {
+	public int appraise(Sensor<K> sensor) {
 		return cost;
 	}
 
