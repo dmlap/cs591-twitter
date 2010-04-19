@@ -23,7 +23,7 @@ public class CELFTest {
 		StatusDao statuses = new StatusDao();
 		User user = User.createUser(1L, "username", 1);
 		Status status = Status.createStatus(1L, user, "i like #twitter", new DateTime(), true);
-		Hash hash = Hash.createHash("#twitter", Collections.singletonList(status));
+		Hash hash = Hash.createHash("#twitter", false, Collections.singletonList(status));
 		try {
 			statuses.save(status);
 			hashes.save(hash);

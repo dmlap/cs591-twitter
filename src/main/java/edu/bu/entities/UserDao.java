@@ -10,7 +10,6 @@ import org.hibernate.criterion.Restrictions;
 import edu.bu.entities.HibernateUtil.HibernateStatement;
 
 public class UserDao implements Dao<User, Long> {
-
 	@Override
 	public User get(final Long key) {
 		return HibernateUtil.doWithSession(new HibernateStatement<User>() {
@@ -102,5 +101,36 @@ public class UserDao implements Dao<User, Long> {
 				return User.createUser(userId, "", 0);
 			}
 		});
+	}
+	
+	/**
+	 * Gets the total users in the table
+	 * 
+	 * @return A long with the total number of rows
+	 */
+	public Long getCount() {
+		return HibernateUtil.doWithSession(new HibernateStatement<Long>() {
+			@Override
+			public Long run(Session session) {
+				return (Long) session.createQuery("select count(*) from User").uniqueResult();
+			}
+		});
+	}
+	
+	/**
+	 * Gets the top ten users by degree
+	 * 
+	 * @return List of the 10 users
+	 */
+	public List<User> topTen() {
+		return HibernateUtil
+				.doWithSession(new HibernateStatement<List<User>>() {
+					@SuppressWarnings("unchecked")
+					@Override
+					public List<User> run(Session session) {
+						return session.createCriteria(User.class).addOrder(
+								Order.desc("degree")).setMaxResults(10).list();
+					}
+				});
 	}
 }

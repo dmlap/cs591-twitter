@@ -1,5 +1,7 @@
 package edu.bu.entities;
 
+import java.util.List;
+
 import org.hibernate.classic.Session;
 import org.hibernate.criterion.Restrictions;
 
@@ -58,5 +60,72 @@ public class HashDao implements Dao<Hash, String>{
 				return null;
 			}
 		});
+	}
+	
+	/**
+	 * Gets a set of hashes where processed = false
+	 * 
+	 * @param count
+	 * 			- The max number of hashes to get
+	 * @return A list of hashes
+	 */
+	public List<Hash> getUnprocessed(final int count) {
+		return HibernateUtil.doWithSession(new HibernateStatement<List<Hash>>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public List<Hash> run(Session session) {
+				return (List<Hash>) session.createQuery("select h from Hash h where h.processed = false")
+					.setMaxResults(count).list();
+			}
+		});
+	}
+	
+	/**
+	 * Gets a set of hashes where processed = true
+	 * 
+	 * @param count
+	 * 			- The max number of hashes to get
+	 * @return A list of hashes
+	 */
+	public List<Hash> getProcessed(final int count) {
+		return HibernateUtil.doWithSession(new HibernateStatement<List<Hash>>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public List<Hash> run(Session session) {
+				return (List<Hash>) session.createQuery("select h from Hash h where h.processed = true")
+					.setMaxResults(count).list();
+			}
+		});
+	}
+	
+	/**
+	 * Gets the total hashes in the table
+	 * 
+	 * @return A long with the total number of rows
+	 */
+	public Long getCount() {
+		return HibernateUtil.doWithSession(new HibernateStatement<Long>() {
+			@Override
+			public Long run(Session session) {
+				return (Long) session.createQuery("select count(*) from Hash").uniqueResult();
+			}
+		});
+	}
+	
+	/**
+	 * Gets the top ten users by degree
+	 * 
+	 * @return List of the 10 users
+	 */
+	public List<Hash> topTen() {
+		return HibernateUtil
+				.doWithSession(new HibernateStatement<List<Hash>>() {
+					@SuppressWarnings("unchecked")
+					@Override
+					public List<Hash> run(Session session) {
+						return (List<Hash>) session.createQuery("select h from Hash h join h.statuses s group by h order by count(s) desc")
+							.setMaxResults(10).list();
+					}
+				});
 	}
 }

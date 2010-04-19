@@ -31,7 +31,7 @@ public class HashTagIncidentServiceTest {
 			user = User.createUser(1L, "username", 1);
 			users.save(user);
 			statuses.add(Status.createStatus(1L, user, "i like #twitter", new DateTime(), true));
-			hash = Hash.createHash("#twitter", statuses);
+			hash = Hash.createHash("#twitter", false, statuses);
 			hashes.save(hash);
 			Set<Incident<Long>> incidents = htis.getAllIncidents();
 			for(Incident<Long> incident : incidents) {

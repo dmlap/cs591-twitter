@@ -104,14 +104,35 @@ public class StatusDao implements Dao<Status, Long> {
 		});
 	}
 	
-	public List<Status> getStartersForHash(final String key) {
+	/**
+	 * Gets the 5 oldest statuses for the specified hash
+	 * 
+	 * @param key
+	 * 			- The hash value
+	 * @return A list of the top starters
+	 */
+	public List<Status> getStartersForHash(final String key, final int count) {
 		return HibernateUtil.doWithSession(new HibernateStatement<List<Status>>() {
 			@SuppressWarnings("unchecked")
 			@Override
 			public List<Status> run(Session session) {
 				return (List<Status>) session.createQuery("select s from Hash h join h.statuses s where h.hash = ? order by s.statusDate desc")
 					.setString(0, key)
-					.setMaxResults(5).list();
+					.setMaxResults(count).list();
+			}
+		});
+	}
+	
+	/**
+	 * Gets the total statuses in the table
+	 * 
+	 * @return A long with the total number of rows
+	 */
+	public Long getCount() {
+		return HibernateUtil.doWithSession(new HibernateStatement<Long>() {
+			@Override
+			public Long run(Session session) {
+				return (Long) session.createQuery("select count(*) from Status").uniqueResult();
 			}
 		});
 	}

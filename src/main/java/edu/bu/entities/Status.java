@@ -3,7 +3,6 @@ package edu.bu.entities;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.CascadeType;
 
 import org.hibernate.annotations.Type;
@@ -39,7 +38,6 @@ public class Status {
 	private void setId(Long id) {
 		this.id = id;
 	}
-	
 	
 	@ManyToOne(cascade = CascadeType.REMOVE)
 	public User getUser() {
@@ -83,6 +81,7 @@ public class Status {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + (processed ? 1231 : 1237);
 		result = prime * result + ((status == null) ? 0 : status.hashCode());
 		result = prime * result
 				+ ((statusdate == null) ? 0 : statusdate.hashCode());
@@ -103,6 +102,8 @@ public class Status {
 			if (other.id != null)
 				return false;
 		} else if (!id.equals(other.id))
+			return false;
+		if (processed != other.processed)
 			return false;
 		if (status == null) {
 			if (other.status != null)
