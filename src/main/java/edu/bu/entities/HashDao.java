@@ -13,8 +13,10 @@ public class HashDao implements Dao<Hash, String>{
 		return HibernateUtil.doWithSession(new HibernateStatement<Hash>() {
 			@Override
 			public Hash run(Session session) {
-				return (Hash) session.createCriteria(Hash.class).add(
+				Hash hash = (Hash) session.createCriteria(Hash.class).add(
 						Restrictions.idEq(key)).uniqueResult();
+				session.flush();
+				return hash;
 			}
 		});
 	}
@@ -43,6 +45,7 @@ public class HashDao implements Dao<Hash, String>{
 				for(Hash t : targets) {
 					session.delete(t);
 				}
+				session.flush();
 				return null;
 			}
 		});
@@ -53,10 +56,13 @@ public class HashDao implements Dao<Hash, String>{
 		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
 			public Void run(Session session) {
+				session.evict(target);
 				session.update(target);
 				for(Hash t : targets) {
+					session.evict(t);
 					session.update(t);
 				}
+				session.flush();
 				return null;
 			}
 		});
@@ -74,8 +80,10 @@ public class HashDao implements Dao<Hash, String>{
 			@SuppressWarnings("unchecked")
 			@Override
 			public List<Hash> run(Session session) {
-				return (List<Hash>) session.createQuery("select h from Hash h where h.processed = false")
+				List<Hash> hash = (List<Hash>) session.createQuery("select h from Hash h where h.processed = false")
 					.setMaxResults(count).list();
+				session.flush();
+				return hash;
 			}
 		});
 	}
@@ -92,8 +100,10 @@ public class HashDao implements Dao<Hash, String>{
 			@SuppressWarnings("unchecked")
 			@Override
 			public List<Hash> run(Session session) {
-				return (List<Hash>) session.createQuery("select h from Hash h where h.processed = true")
+				List<Hash> hash = (List<Hash>) session.createQuery("select h from Hash h where h.processed = true")
 					.setMaxResults(count).list();
+				session.flush();
+				return hash;
 			}
 		});
 	}
@@ -107,7 +117,9 @@ public class HashDao implements Dao<Hash, String>{
 		return HibernateUtil.doWithSession(new HibernateStatement<Long>() {
 			@Override
 			public Long run(Session session) {
-				return (Long) session.createQuery("select count(*) from Hash").uniqueResult();
+				Long count = (Long) session.createQuery("select count(*) from Hash").uniqueResult();
+				session.flush();
+				return count;
 			}
 		});
 	}
@@ -123,8 +135,10 @@ public class HashDao implements Dao<Hash, String>{
 					@SuppressWarnings("unchecked")
 					@Override
 					public List<Hash> run(Session session) {
-						return (List<Hash>) session.createQuery("select h from Hash h join h.statuses s group by h order by count(s) desc")
+						List<Hash> hash = (List<Hash>) session.createQuery("select h from Hash h join h.statuses s group by h order by count(s) desc")
 							.setMaxResults(10).list();
+						session.flush();
+						return hash;
 					}
 				});
 	}

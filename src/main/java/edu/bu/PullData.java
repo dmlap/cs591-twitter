@@ -33,7 +33,7 @@ import org.joda.time.format.DateTimeFormatterBuilder;
 import edu.bu.entities.*;
 
 /**
- * Pulls XML data from twitter and stores it in the filesystem.
+ * Pulls XML data from twitter and stores it in a database.
  * 
  */
 public class PullData {
@@ -111,30 +111,11 @@ public class PullData {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
-	    //new PullData().pull(new FileOutputStream(new File("target", "output")));
-		
 		//new PullData().sampleUsers();
 		
-		//Users user = new PullData().getRandomUser();
-		//System.out.println(user.getName());
-		//System.out.println(user.getId());
-		//System.out.println(user.getDegree());
+		//new PullData().getStatuses();
 		
-		/*Set<Users> users = new PullData().sampleFollowers(new Long(18936866));
-		
-		Iterator<Users> it = users.iterator();
-		while (it.hasNext()) {
-			Users user = it.next();
-			System.out.println(user.getName());
-			System.out.println(user.getId());
-			System.out.println(user.getDegree());
-		}*/
-		
-		//new PullData().sampleUsers();
-		
-		//new PullData()getStatuses();
-		
-		//new PullData().processStatuses();
+		new PullData().processStatuses();
 		
 		/*List<Starter> starters = new PullData().getStarters();
 		UserDao dao = new UserDao();
@@ -150,7 +131,7 @@ public class PullData {
 			System.out.println(user.getDegree());
 		}*/
 		
-		new PullData().getStatistics();
+		//new PullData().getStatistics();
 	}
 	
 	/**
@@ -286,6 +267,12 @@ public class PullData {
 		// Open the doc
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(publictimeline));
+		
+		// Check for rate limit
+		if (document.getStringValue().contains("Rate limit exceeded.")) {
+			System.out.println("Rate limit exceeded");
+			System.exit(0);
+		}
 
 		// Parse user id's
 		Element root = document.getRootElement();
@@ -350,6 +337,12 @@ public class PullData {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(followers));
 		
+		// Check for rate limit
+		if (document.getStringValue().contains("Rate limit exceeded.")) {
+			System.out.println("Rate limit exceeded");
+			System.exit(0);
+		}
+		
 		// Parse user id's
 		Element root = document.getRootElement();
 		for (@SuppressWarnings("unchecked")Iterator<Element> itidlist = root.elementIterator(); itidlist.hasNext(); ) {
@@ -408,6 +401,13 @@ public class PullData {
 		// Open the doc
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(userdata));
+		
+		// Check for rate limit
+		if (document.getStringValue().contains("Rate limit exceeded.")) {
+			System.out.println("Rate limit exceeded");
+			System.exit(0);
+		}
+		
 		System.out.println("Parse follower data");
 		// Parse user id's
 		Element root = document.getRootElement();
@@ -541,6 +541,13 @@ public class PullData {
 		SAXReader reader = new SAXReader();
 		try {
 			Document document = reader.read(new ByteArrayInputStream(statusxml));
+			
+			// Check for rate limit
+			if (document.getStringValue().contains("Rate limit exceeded.")) {
+				System.out.println("Rate limit exceeded");
+				System.exit(0);
+			}
+			
 			System.out.println("Parse status data");
 			
 			// Parse user id's
@@ -611,7 +618,6 @@ public class PullData {
 		StatusDao statusDao = new StatusDao();
 		List<Status> unprocessed = statusDao.getUnprocessed(MAX_UNPROCESSED_USERS);
 		Stemmer stemmer = new Stemmer();
-		HashDao dao = new HashDao();
 		StatusDao statusdao = new StatusDao();
 		
 		while (unprocessed.size() > 0) {
@@ -633,6 +639,7 @@ public class PullData {
 							
 							if (stream.incrementToken()) {
 								String stem = termAttrib.term();
+								HashDao dao = new HashDao();
 								Hash hash = dao.get(stem);
 								
 								if (hash == null) {
@@ -737,6 +744,9 @@ public class PullData {
 		}
 	}
 	
+	/**
+	 * Prints out stats about the current dataset
+	 */
 	public void getStatistics() {
 		System.out.println("***** Statistics *****");
 		UserDao userDao = new UserDao();

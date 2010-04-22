@@ -16,8 +16,10 @@ public class StatusDao implements Dao<Status, Long> {
 		return HibernateUtil.doWithSession(new HibernateStatement<Status>() {
 			@Override
 			public Status run(Session session) {
-				return (Status) session.createCriteria(Status.class).add(
+				Status status = (Status) session.createCriteria(Status.class).add(
 						Restrictions.idEq(key)).uniqueResult();
+				session.flush();
+				return status;
 			}
 		});
 	}
@@ -42,10 +44,13 @@ public class StatusDao implements Dao<Status, Long> {
 		HibernateUtil.doWithSession(new HibernateStatement<Void>() {
 			@Override
 			public Void run(Session session) {
+				session.evict(target);
 				session.delete(target);
 				for(Status t : targets) {
+					session.evict(t);
 					session.delete(t);
 				}
+				session.flush();
 				return null;
 			}
 		});
@@ -60,6 +65,7 @@ public class StatusDao implements Dao<Status, Long> {
 				for(Status t : targets) {
 					session.update(t);
 				}
+				session.flush();
 				return null;
 			}
 		});
@@ -78,8 +84,9 @@ public class StatusDao implements Dao<Status, Long> {
 					@Override
 					public Status run(Session session) {
 						Long statusId = (Long) session.createCriteria(Status.class).add
-							(Restrictions.eq("userId", id)).
+							(Restrictions.eq("user.id", id)).
 							setProjection(Projections.max("id")).uniqueResult();
+						session.flush();
 						return Status.createStatus(statusId, User.createUser(-1L, "name", 0), "", new DateTime(2010, 1, 1, 12, 0, 0, 0), false);
 					}
 				});
@@ -98,8 +105,10 @@ public class StatusDao implements Dao<Status, Long> {
 			@SuppressWarnings("unchecked")
 			@Override
 			public List<Status> run(Session session) {
-				return session.createCriteria(Status.class).add(
+				List<Status> status = session.createCriteria(Status.class).add(
 						Restrictions.eq("processed", false)).setMaxResults(count).list();
+				session.flush();
+				return status;
 			}
 		});
 	}
@@ -116,9 +125,11 @@ public class StatusDao implements Dao<Status, Long> {
 			@SuppressWarnings("unchecked")
 			@Override
 			public List<Status> run(Session session) {
-				return (List<Status>) session.createQuery("select s from Hash h join h.statuses s where h.hash = ? order by s.statusDate desc")
+				List<Status> status = (List<Status>) session.createQuery("select s from Hash h join h.statuses s where h.hash = ? order by s.statusDate desc")
 					.setString(0, key)
 					.setMaxResults(count).list();
+				session.flush();
+				return status;
 			}
 		});
 	}
@@ -132,7 +143,9 @@ public class StatusDao implements Dao<Status, Long> {
 		return HibernateUtil.doWithSession(new HibernateStatement<Long>() {
 			@Override
 			public Long run(Session session) {
-				return (Long) session.createQuery("select count(*) from Status").uniqueResult();
+				Long count = (Long) session.createQuery("select count(*) from Status").uniqueResult();
+				session.flush();
+				return count;
 			}
 		});
 	}
