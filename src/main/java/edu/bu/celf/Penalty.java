@@ -74,7 +74,7 @@ public class Penalty<K extends Comparable<K>> {
 	 *         given a {@link Set} of {@link Sensor}s.
 	 */
 	public long penaltyReduction(IncidentDistribution distribution,
-			CascadeSet<K> cascades, Set<Sensor<K>> sensors) {
+			CascadeSet<K> cascades, Set<? extends Sensor<K>> sensors) {
 		long result = 0L;
 		for (IncidentCascade<K> cascade : cascades) {
 			result += distribution.probability(cascade)
@@ -95,7 +95,7 @@ public class Penalty<K extends Comparable<K>> {
 	 *         {@link Set} of {@link Sensor}s
 	 */
 	protected long penaltyReduction(IncidentCascade<K> incident,
-			Set<Sensor<K>> sensors) {
+			Set<? extends Sensor<K>> sensors) {
 		long result = MAX_PENALTY;
 		for (Sensor<K> sensor : sensors) {
 			result = Math.min(result, evaluator.evaluate(sensor, incident

@@ -133,4 +133,20 @@ public class UserDao implements Dao<User, Long> {
 					}
 				});
 	}
+
+	/**
+	 * Returns all {@link User}s
+	 * 
+	 * @return all {@link User}s
+	 */
+	public List<User> getAll() {
+		return HibernateUtil
+				.doWithSession(new HibernateStatement<List<User>>() {
+					@Override
+					@SuppressWarnings("unchecked")
+					public List<User> run(Session session) {
+						return session.createCriteria(User.class).list();
+					}
+				});
+	}
 }

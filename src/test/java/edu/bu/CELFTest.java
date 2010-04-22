@@ -25,7 +25,7 @@ public class CELFTest {
 	
 	private UserDao users = new UserDao();
 	private HashDao hashes = new HashDao();
-	private HashTagIncidentService htis = new HashTagIncidentService(hashes);
+	private HashTagIncidentService htis = new HashTagIncidentService();
 	private User user = User.createUser(1L, "username", 1);
 	private Status status = Status.createStatus(1L, user, "i like #twitter", new DateTime(), true);
 	private Hash hash = Hash.createHash("#twitter", false, Collections.singletonList(status));

@@ -12,9 +12,7 @@ import org.joda.time.DateTime;
 
 import edu.bu.Incident;
 import edu.bu.Sensor;
-import edu.bu.entities.Dao;
 import edu.bu.entities.Hash;
-import edu.bu.entities.HashDao;
 import edu.bu.entities.HibernateUtil;
 import edu.bu.entities.HibernateUtil.HibernateStatement;
 
@@ -25,16 +23,6 @@ import edu.bu.entities.HibernateUtil.HibernateStatement;
  * 
  */
 public class HashTagIncidentService {
-	private final Dao<Hash, String> hashDao;
-
-	/**
-	 * Construct a new {@link HashTagIncidentService} that uses the specified {@link HashDao}
-	 * @param hashDao
-	 */
-	public HashTagIncidentService(Dao<Hash, String> hashDao) {
-		this.hashDao = hashDao;
-	}
-	
 	/**
 	 * Returns the {@link Set} of all {@link Hash} {@link Incident}s.
 	 * 

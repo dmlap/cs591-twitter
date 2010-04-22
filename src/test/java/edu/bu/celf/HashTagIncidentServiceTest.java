@@ -23,7 +23,7 @@ public class HashTagIncidentServiceTest {
 	public void getAllIncidents() {
 		UserDao users = new UserDao();
 		HashDao hashes = new HashDao();
-		HashTagIncidentService htis = new HashTagIncidentService(hashes);
+		HashTagIncidentService htis = new HashTagIncidentService();
 		User user = null;
 		Hash hash = null;
 		List<Status> statuses = new ArrayList<Status>();

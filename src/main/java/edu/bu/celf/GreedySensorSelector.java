@@ -21,10 +21,10 @@ import edu.bu.Sensor;
  */
 public class GreedySensorSelector<K extends Comparable<K>> implements SensorSelector<K> {
 	private static final Long MIN_BENEFIT = Long.MIN_VALUE;
-	private static final <K extends Comparable<K>> Comparator<Pair<Sensor<K>, Long>> benefit() {
-		return new Comparator<Pair<Sensor<K>, Long>>() {
+	private static final <K extends Comparable<K>, S extends Sensor<K>> Comparator<Pair<S, Long>> benefit() {
+		return new Comparator<Pair<S, Long>>() {
 			@Override
-			public int compare(Pair<Sensor<K>, Long> o1, Pair<Sensor<K>, Long> o2) {
+			public int compare(Pair<S, Long> o1, Pair<S, Long> o2) {
 				if (o1.first.equals(o2.first)) {
 					return 0;
 				}
@@ -51,18 +51,18 @@ public class GreedySensorSelector<K extends Comparable<K>> implements SensorSele
 	 * @see edu.bu.celf.SensorSelector#select(int, java.util.Set, edu.bu.CascadeSet)
 	 */
 	@Override
-	public Set<Sensor<K>> select(int budget, Set<Sensor<K>> sensors,
+	public <S extends Sensor<K>> Set<S> select(int budget, Set<S> sensors,
 			CascadeSet<K> cascades) {
-		final NavigableSet<Pair<Sensor<K>, Long>> benefits = new TreeSet<Pair<Sensor<K>, Long>>(
-				GreedySensorSelector.<K>benefit());
-		final Set<Sensor<K>> selected = new HashSet<Sensor<K>>(budget);
+		final NavigableSet<Pair<S, Long>> benefits = new TreeSet<Pair<S, Long>>(
+				GreedySensorSelector.<K, S>benefit());
+		final Set<S> selected = new HashSet<S>(budget);
 		// initialize benefits cache
-		for(Sensor<K> sensor : sensors) {
-			benefits.add(new Pair<Sensor<K>, Long>(sensor, MIN_BENEFIT));
+		for(S sensor : sensors) {
+			benefits.add(new Pair<S, Long>(sensor, MIN_BENEFIT));
 		}
 		OUTER: while(budget > 0) {
 			while(!benefits.isEmpty()) {
-				Pair<Sensor<K>, Long> benefit = benefits.first();
+				Pair<S, Long> benefit = benefits.first();
 				benefits.remove(benefit);
 				int cost = appraiser.appraise(benefit.first); 
 				if(cost > budget) {
@@ -77,7 +77,7 @@ public class GreedySensorSelector<K extends Comparable<K>> implements SensorSele
 					continue OUTER;
 				}
 				selected.remove(benefit.first);
-				benefits.add(new Pair<Sensor<K>, Long>(benefit.first, update));
+				benefits.add(new Pair<S, Long>(benefit.first, update));
 			}
 			// no acceptable sensor found, we're done
 			break;

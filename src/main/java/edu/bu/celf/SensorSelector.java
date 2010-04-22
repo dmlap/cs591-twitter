@@ -29,6 +29,6 @@ public interface SensorSelector<K extends Comparable<K>> {
 	 * @return a {@link Set subset} of sensors with cost no greater than
 	 *         <code>budget</code>
 	 */
-	Set<Sensor<K>> select(int budget, Set<Sensor<K>> sensors, CascadeSet<K> cascades);
+	<S extends Sensor<K>> Set<S> select(int budget, Set<S> sensors, CascadeSet<K> cascades);
 
 }

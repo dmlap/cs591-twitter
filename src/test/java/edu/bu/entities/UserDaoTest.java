@@ -41,5 +41,22 @@ public class UserDaoTest {
 			dao.delete(user0, user1, user2, user3);
 		}
 	}
+	
+	@Test
+	public void getAll() {
+		UserDao dao = new UserDao();
+		User user0 = User.createUser(0L, "user0", 0);
+		User user1 = User.createUser(1L, "user1", 0);
+		try {
+			dao.save(user0, user1);
+			List<User> results = dao.getAll();
+			
+			assertTrue(results.size() >= 2);
+			assertTrue(results.contains(user0));
+			assertTrue(results.contains(user1));
+		} finally {
+			dao.delete(user0, user1);
+		}
+	}
 
 }
