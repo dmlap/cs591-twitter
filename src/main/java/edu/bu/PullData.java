@@ -2,7 +2,7 @@ package edu.bu;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -20,6 +20,8 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -28,15 +30,10 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatterBuilder;
 
-import edu.bu.entities.LastID;
-import edu.bu.entities.LastIDDao;
-import edu.bu.entities.Status;
-import edu.bu.entities.StatusDao;
-import edu.bu.entities.User;
-import edu.bu.entities.UserDao;
+import edu.bu.entities.*;
 
 /**
- * Pulls XML data from twitter and stores it in the filesystem.
+ * Pulls XML data from twitter and stores it in a database.
  * 
  */
 public class PullData {
@@ -48,40 +45,23 @@ public class PullData {
 	private static final String USER_FOLLOWER_IDS_XML = TWITTER_FOLLOWERS + "ids.xml";
 	private static final String TWITTER_USERS = TWITTER_API_URL + "/1/users/";
 	private static final String SHOW_XML = TWITTER_USERS + "show.xml";
-	private static final String SCREEN_NAME_PARAM = "screen_name";
 	private static final String USER_ID_PARAM = "user_id";
-	private static final String PAGE_PARAM = "page";
 	private static final String CURSOR_PARAM = "cursor";
 	private static final String SINCE_ID_PARAM = "since_id";
 	private static final String COUNT_PARAM = "count";
 	private static final String QPARAM_START = "?";
 	private static final String PARAM_ASSIGNMENT = "=";
 	private static final String PARAM_SEPARATOR = "&";
-	private static final int PAGE_COUNT = 1;
 	private static final float SAMPLE_PCT = 0.20f;
 	private static final int MAX_SAMPLES = 50;
 	private static final int MAX_SAMPLED_USERS = 100;
-	private static final int MAX_USERS_FOR_STATUSES = 150; //150 Rate limit an hour
-	private static final int MAX_STATUSES_TO_PULL = 200;  //Twitter limit
-	private static final int MAX_UNPROCESSED_USERS = 10;
-	private final String username;
+	private static final int MAX_USERS_FOR_STATUSES = 150; 	//150 Rate limit an hour
+	private static final int MAX_STATUSES_TO_PULL = 200;  	//Twitter limit
+	private static final int MAX_UNPROCESSED_USERS = 10;	//Process in chunks
+	private static final int MAX_UNPROCESSED_HASHES = 15;	//Process in chunks since statuses come back 
+	private static final int MAX_STARTERS = 5;
 	
-	public PullData(String username) {
-		this.username = username;
-	}
-	
-	private String apply(String base, String screenName, int page) {
-		return new StringBuilder(base)
-			.append(QPARAM_START)
-			.append(SCREEN_NAME_PARAM)
-			.append(PARAM_ASSIGNMENT)
-			.append(screenName)
-			.append(PARAM_SEPARATOR)
-			.append(PAGE_PARAM)
-			.append(PARAM_ASSIGNMENT)
-			.append(page)
-			.toString();
-	}
+	public PullData() {	}
 	
 	private String apply(String base, Long userID, Long sinceID, int count) {
 		StringBuilder retval = new StringBuilder(base)
@@ -126,51 +106,32 @@ public class PullData {
 			.toString();
 	}
 	
-	public void pull(final OutputStream outstream) throws ClientProtocolException, IOException {
-		HttpClient httpClient = new DefaultHttpClient();
-		for (int i = 0; i < PAGE_COUNT; ++i) {
-			DataAccess.writeByteArray(httpClient.execute(new HttpGet(apply(
-					USER_TIMELINE_XML, username, i)),
-					new ResponseHandler<byte[]>() {
-						@Override
-						public byte[] handleResponse(HttpResponse response)
-								throws ClientProtocolException, IOException {
-							response.getEntity().writeTo(outstream);
-							return EntityUtils
-									.toByteArray(response.getEntity());
-						}
-					}), "output");
-		}
-	}
-	
-
 	/**
 	 * @param args
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
-	    //new PullData("dlapalomento", 1).pull(new FileOutputStream(new File("target", "output")));
+		//new PullData().sampleUsers();
 		
-		//new PullData("dlapalomento", 1).sampleUsers();
+		//new PullData().getStatuses();
 		
-		//Users user = new PullData("dlapalomento", 1).getRandomUser();
-		//System.out.println(user.getName());
-		//System.out.println(user.getId());
-		//System.out.println(user.getDegree());
+		new PullData().processStatuses();
 		
-		/*Set<Users> users = new PullData("dlapalomento", 1).sampleFollowers(new Long(18936866));
-		
-		Iterator<Users> it = users.iterator();
+		/*List<Starter> starters = new PullData().getStarters();
+		UserDao dao = new UserDao();
+		ListIterator<Starter> it = starters.listIterator();
 		while (it.hasNext()) {
-			Users user = it.next();
-			System.out.println(user.getName());
-			System.out.println(user.getId());
+			Starter starter = it.next();
+			User user = dao.get(starter.getId());
+			System.out.print("Starter: ");
+			System.out.print(starter.getId());
+			System.out.print(", Score: ");
+			System.out.println(starter.getScore());
+			System.out.print("Username: " + user.getName() + ", Degree: ");
 			System.out.println(user.getDegree());
 		}*/
 		
-		//new PullData("dlapalomento").sampleUsers();
-		
-		new PullData("dlapalomento").getStatuses();
+		//new PullData().getStatistics();
 	}
 	
 	/**
@@ -306,6 +267,12 @@ public class PullData {
 		// Open the doc
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(publictimeline));
+		
+		// Check for rate limit
+		if (document.getStringValue().contains("Rate limit exceeded.")) {
+			System.out.println("Rate limit exceeded");
+			System.exit(0);
+		}
 
 		// Parse user id's
 		Element root = document.getRootElement();
@@ -370,6 +337,12 @@ public class PullData {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(followers));
 		
+		// Check for rate limit
+		if (document.getStringValue().contains("Rate limit exceeded.")) {
+			System.out.println("Rate limit exceeded");
+			System.exit(0);
+		}
+		
 		// Parse user id's
 		Element root = document.getRootElement();
 		for (@SuppressWarnings("unchecked")Iterator<Element> itidlist = root.elementIterator(); itidlist.hasNext(); ) {
@@ -428,6 +401,13 @@ public class PullData {
 		// Open the doc
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new ByteArrayInputStream(userdata));
+		
+		// Check for rate limit
+		if (document.getStringValue().contains("Rate limit exceeded.")) {
+			System.out.println("Rate limit exceeded");
+			System.exit(0);
+		}
+		
 		System.out.println("Parse follower data");
 		// Parse user id's
 		Element root = document.getRootElement();
@@ -511,9 +491,8 @@ public class PullData {
 	/**
 	 * Pulls statuses for the specified user
 	 * 
-	 * @param userId
-	 * 			- The user ID of the user to get data for
-	 * @param user TODO
+	 * @param user
+	 * 			- The user to get data for
 	 * @return A list of statuses
 	 * @throws ClientProtocolException
 	 * @throws IOException
@@ -562,6 +541,13 @@ public class PullData {
 		SAXReader reader = new SAXReader();
 		try {
 			Document document = reader.read(new ByteArrayInputStream(statusxml));
+			
+			// Check for rate limit
+			if (document.getStringValue().contains("Rate limit exceeded.")) {
+				System.out.println("Rate limit exceeded");
+				System.exit(0);
+			}
+			
 			System.out.println("Parse status data");
 			
 			// Parse user id's
@@ -622,10 +608,17 @@ public class PullData {
 		.toFormatter().parseDateTime(utcdate);
 	}
 
-	public void processStatuses() {
+	/**
+	 * Processes statuses parsing out hashes
+	 * 
+	 * @throws IOException
+	 */
+	public void processStatuses() throws IOException {
 		// Pull unprocessed statuses
 		StatusDao statusDao = new StatusDao();
 		List<Status> unprocessed = statusDao.getUnprocessed(MAX_UNPROCESSED_USERS);
+		Stemmer stemmer = new Stemmer();
+		StatusDao statusdao = new StatusDao();
 		
 		while (unprocessed.size() > 0) {
 			ListIterator<Status> it = unprocessed.listIterator();
@@ -634,18 +627,174 @@ public class PullData {
 				
 				// Parse status
 				if (status.getStatus().contains("#")) {
-					String[] words = status.getStatus().split(" ");
+					String[] words = status.getStatus().split("\\s+");
 					for(int i = 0; i < words.length; i++) {
 						String word = words[i];
 						if (word.charAt(0) == '#') {
+							// Get hash stem
+							TokenStream stream = stemmer.tokenStream("hash", new StringReader(word));
+							TermAttribute termAttrib = stream.addAttribute(TermAttribute.class);
 							
+							stream.reset();
+							
+							if (stream.incrementToken()) {
+								String stem = termAttrib.term();
+								HashDao dao = new HashDao();
+								Hash hash = dao.get(stem);
+								
+								if (hash == null) {
+									// Add new hash
+									List<Status> statuses = new ArrayList<Status>();
+									statuses.add(status);
+									hash = Hash.createHash(stem, false, statuses);
+									dao.save(hash);
+								} else {
+									// Update status list for hash
+									hash.getStatuses().add(status);
+									dao.update(hash);
+								}
+							}
+							
+							stream.end();
+							stream.close();
 						}
 					}
 				}
+				
+				// Mark the status as processed
+				status.setProcessed(true);
+				statusdao.update(status);
 			}
 			
 			// Refill unprocessed
 			unprocessed = statusDao.getUnprocessed(MAX_UNPROCESSED_USERS);
+		}
+	}
+	
+	/**
+	 * Processes the hashes determining best starters
+	 * 
+	 * @return A list of the top starters
+	 */
+	public List<Starter> getStarters() {
+		HashDao hashDao = new HashDao();
+		StatusDao statusDao = new StatusDao();
+		StarterDao starterDao = new StarterDao();
+		
+		// Clear starter table
+		starterDao.deleteAll();
+		
+		List<Hash> unprocessed = hashDao.getUnprocessed(MAX_UNPROCESSED_HASHES);
+		
+		while (unprocessed.size() > 0) {
+			ListIterator<Hash> it = unprocessed.listIterator();
+			
+			while (it.hasNext()) {
+				Hash hash = it.next();
+				List<Status> statuses = statusDao.getStartersForHash(hash.getHash(), MAX_STARTERS);
+				ListIterator<Status> itstatuses = statuses.listIterator();
+				int counter = 0;
+				
+				while (itstatuses.hasNext()) {
+					Status status = itstatuses.next();
+					Starter starter = starterDao.get(status.getUser().getId());
+					
+					if (starter == null) {
+						starter = Starter.createStarter(status.getUser().getId(), statuses.size() - counter);
+						starterDao.save(starter);
+					} else {
+						starter.setScore(starter.getScore() + statuses.size() - counter);
+						starterDao.update(starter);
+					}
+					counter++;
+				}
+				
+				// Update hash
+				hash.setProcessed(true);
+				hashDao.update(hash);
+			}
+			
+			// Refill unprocessed
+			unprocessed = hashDao.getUnprocessed(MAX_UNPROCESSED_HASHES);
+		}
+		
+		// Reset hash processed
+		this.resetHashes();
+		
+		return starterDao.getTopStarters(MAX_STARTERS);
+	}
+	
+	/**
+	 * Resets all of the hashes to not processed
+	 */
+	public void resetHashes() {
+		HashDao dao = new HashDao();
+		List<Hash> hashes = dao.getProcessed(MAX_UNPROCESSED_HASHES);
+		
+		while (hashes.size() > 0) {
+			ListIterator<Hash> it = hashes.listIterator();
+			
+			while (it.hasNext()) {
+				Hash hash = it.next();
+				hash.setProcessed(false);
+				dao.update(hash);
+			}
+			
+			hashes = dao.getProcessed(MAX_UNPROCESSED_HASHES); 
+		}
+	}
+	
+	/**
+	 * Prints out stats about the current dataset
+	 */
+	public void getStatistics() {
+		System.out.println("***** Statistics *****");
+		UserDao userDao = new UserDao();
+		Long usercount = userDao.getCount();
+		System.out.println("Total Users: " + usercount);
+		
+		StatusDao statusDao = new StatusDao();
+		Long statuscount = statusDao.getCount();
+		System.out.println("Total Statuses: " + statuscount);
+		
+		HashDao hashDao = new HashDao();
+		Long hashcount = hashDao.getCount();
+		System.out.println("Total Hashes: " + hashcount + "\n");
+		
+		System.out.println("Top 10 Users (degree)");
+		List<User> users = userDao.topTen();
+		ListIterator<User> ituser = users.listIterator();
+		int counter = 1;
+		while (ituser.hasNext()) {
+			User user = ituser.next();
+			System.out.println(counter + ". \tUserID: " + user.getId());
+			System.out.println("\tName: " + user.getName());
+			System.out.println("\tDegree: " + user.getDegree() + "\n");
+			counter++;
+		}
+		
+		System.out.println("Top 10 Hashes");
+		List<Hash> hashes = hashDao.topTen();
+		ListIterator<Hash> ithash = hashes.listIterator();
+		counter = 1;
+		while (ithash.hasNext()) {
+			Hash hash = ithash.next();
+			System.out.println(counter + ". \tHash: " + hash.getHash());
+			System.out.println("\tCount: " + hash.getStatuses().size() + "\n");
+			counter++;
+		}
+		
+		System.out.println("Top 10 Starters");
+		StarterDao starterDao = new StarterDao();
+		List<Starter> starters = starterDao.getTopStarters(10);
+		ListIterator<Starter> it = starters.listIterator();
+		counter = 1;
+		while (it.hasNext()) {
+			Starter starter = it.next();
+			User user = userDao.get(starter.getId());
+			System.out.println(counter + "\tStarter: " + starter.getId() + ", Score: " + starter.getScore());
+			System.out.println("\tUsername: " + user.getName() + ", Degree: " + user.getDegree() + "\n");
+			counter++;
 		}
 	}
 }

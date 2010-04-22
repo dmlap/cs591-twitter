@@ -25,6 +25,7 @@ public class User implements Sensor<Long> {
 	public Long getId() {
 		return this.id;
 	}
+	
 	@SuppressWarnings("unused")
 	private void setId(Long id) {
 		this.id = id;
@@ -33,6 +34,7 @@ public class User implements Sensor<Long> {
 	public String getName() {
 		return this.name;
 	}
+	
 	@SuppressWarnings("unused")
 	private void setName(String name) {
 		this.name = name;
@@ -41,6 +43,7 @@ public class User implements Sensor<Long> {
 	public int getDegree() {
 		return this.degree;
 	}
+	
 	@SuppressWarnings("unused")
 	private void setDegree(int degree) {
 		this.degree = degree;

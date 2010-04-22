@@ -4,19 +4,22 @@ import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 
 @Entity
 public class Hash {
 	private String hash;
+	private boolean processed;
 	private List<Status> statuses;
 	
 	private Hash() {}
 	
-	public static Hash createHash(String hash, List<Status> statuses) {
+	public static Hash createHash(String hash, boolean processed, List<Status> statuses) {
 		Hash result = new Hash();
 		result.hash = hash;
+		result.processed = processed;
 		result.statuses = statuses;
 		
 		return result;
@@ -32,7 +35,15 @@ public class Hash {
 		this.hash = hash;
 	}
 	
-	@ManyToMany(cascade=CascadeType.ALL)
+	public boolean getProcessed() {
+		return this.processed;
+	}
+	
+	public void setProcessed(boolean processed) {
+		this.processed = processed;
+	}
+	
+	@ManyToMany(fetch=FetchType.EAGER, cascade=CascadeType.ALL)
 	public List<Status> getStatuses() {
 		return this.statuses;
 	}
@@ -47,6 +58,9 @@ public class Hash {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((hash == null) ? 0 : hash.hashCode());
+		result = prime * result + (processed ? 1231 : 1237);
+		result = prime * result
+				+ ((statuses == null) ? 0 : statuses.hashCode());
 		return result;
 	}
 
@@ -64,6 +78,18 @@ public class Hash {
 				return false;
 		} else if (!hash.equals(other.hash))
 			return false;
+		if (processed != other.processed)
+			return false;
+		if (statuses == null) {
+			if (other.statuses != null)
+				return false;
+		} else {
+			for(int i = 0; i < statuses.size(); ++i) {
+				if(!statuses.get(i).equals(other.statuses.get(i))) {
+					return false;
+				}
+			}
+		}
 		return true;
 	}
 }

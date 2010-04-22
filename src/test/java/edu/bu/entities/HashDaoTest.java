@@ -11,7 +11,7 @@ public class HashDaoTest {
 	@Test
 	public void saveDeleteLoad() {
 		HashDao dao = new HashDao();
-		Hash hash = Hash.createHash("Test", new ArrayList<Status>());
+		Hash hash = Hash.createHash("Test", false, new ArrayList<Status>());
 		try {
 			dao.save(hash);
 			Hash hash0 = dao.get(hash.getHash());
