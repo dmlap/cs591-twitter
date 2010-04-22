@@ -4,8 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 public class UserDaoTest {
@@ -57,6 +59,26 @@ public class UserDaoTest {
 		} finally {
 			dao.delete(user0, user1);
 		}
+	}
+	
+	@Test
+	public void getHashCount() {
+		UserDao dao = new UserDao();
+		HashDao hashDao = new HashDao();
+		User user = User.createUser(0L, "user", 0);
+		Status status0 = Status.createStatus(1L, user, "I love #hash", new DateTime(), true);
+		Status status1 = Status.createStatus(2L, user, "seriously, I love #hash", new DateTime(), true);
+		Hash hash = Hash.createHash("#hash", true, Arrays.asList(status0, status1));
+		try {
+			dao.save(user);
+			hashDao.save(hash);
+			
+			assertEquals(2, dao.getHashCount(user));
+		} finally {
+			hashDao.delete(hash);
+			dao.delete(user);
+		}
+		
 	}
 
 }

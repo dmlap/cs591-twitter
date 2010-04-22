@@ -2,6 +2,7 @@ package edu.bu.entities;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.CascadeType;
 
@@ -40,6 +41,7 @@ public class Status {
 	}
 	
 	@ManyToOne(cascade = CascadeType.REMOVE)
+	@JoinColumn(name="userid")
 	public User getUser() {
 		return user;
 	}

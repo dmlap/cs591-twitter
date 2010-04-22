@@ -133,6 +133,28 @@ public class UserDao implements Dao<User, Long> {
 					}
 				});
 	}
+	
+	/**
+	 * Returns the number of {@link Status statuses} the specified {@link User}
+	 * has posted with a {@link Hash} in it.
+	 * 
+	 * @param user
+	 *            - the {@link User} to query
+	 * @return the number of {@link Status statuses} the specified {@link User}
+	 *         has posted with a {@link Hash} in it.
+	 */
+	public int getHashCount(final User user) {
+		return HibernateUtil.doWithSession(new HibernateStatement<Integer>() {
+			@Override
+			public Integer run(Session session) {
+				return (Integer) session.createCriteria(Hash.class)
+					.setProjection(Projections.rowCount())
+					.createCriteria("statuses")
+						.add(Restrictions.eq("user.id", user.getId()))
+					.uniqueResult();
+			}
+		});
+	}
 
 	/**
 	 * Returns all {@link User}s

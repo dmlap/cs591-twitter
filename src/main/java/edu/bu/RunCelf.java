@@ -11,6 +11,8 @@ import edu.bu.celf.GreedySensorSelector;
 import edu.bu.celf.HashTagIncidentService;
 import edu.bu.celf.IncidentDistribution;
 import edu.bu.celf.Penalty;
+import edu.bu.entities.HashDao;
+import edu.bu.entities.StatusDao;
 import edu.bu.entities.User;
 import edu.bu.entities.UserDao;
 
@@ -32,6 +34,8 @@ public class RunCelf {
 		System.out.println("Initializing unit-cost CELF with budget " + budget + "...");
 		
 		UserDao userDao = new UserDao();
+		StatusDao statusDao = new StatusDao();
+		HashDao hashDao = new HashDao();
 		HashTagIncidentService htis = new HashTagIncidentService();
 		final Set<Incident<Long>> incidents = htis.getAllIncidents();
 		GreedySensorSelector<Long> celf = new GreedySensorSelector<Long>(
@@ -52,14 +56,18 @@ public class RunCelf {
 		
 		System.out.println("Running unit-cost CELF...");
 		
-		Set<User> results = celf.select(budget, new HashSet<User>(
+		Set<User> users = celf.select(budget, new HashSet<User>(
 				userDao.getAll()), new CascadeSet<Long>(incidents));
 		
 		System.out.println("\nResults:");
-		System.out.println("Selected " + results.size() + " users");
-		for (User result : results) {
-			System.out.println(result.getName() + " (" + result.getId() + ")");
-			System.out.println("  degree " + result.getDegree());
+		System.out.println("Number of users: " + userDao.getCount());
+		System.out.println("Number of status messages: " + statusDao.getCount());
+		System.out.println("Number of unique hashes: " + hashDao.getCount());
+		System.out.println("Selected " + users.size() + " users");
+		for (User user : users) {
+			System.out.println(user.getName() + " (" + user.getId() + ")");
+			System.out.println("  degree " + user.getDegree());
+			System.out.println("  number of hashes: " + userDao.getHashCount(user));
 		}
 		System.out.println("\nDone.");
 	}
