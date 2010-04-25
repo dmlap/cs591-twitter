@@ -26,7 +26,7 @@ public class Penalty<K extends Comparable<K>> {
 			new SensorEvaluator<K>() {
 				@Override
 				public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
-					return Long.MAX_VALUE
+					return MAX_PENALTY
 							- detectionInterval.toDurationMillis();
 				}
 			});
@@ -39,11 +39,11 @@ public class Penalty<K extends Comparable<K>> {
 			}
 		});
 	}
-	public static final <K extends Comparable<K>> Penalty<K> populationAffected(final IncidentCascade<K> cascade) {
+	public static final <K extends Comparable<K>> Penalty<K> populationAffected(final int population, final IncidentCascade<K> cascade) {
 		return new Penalty<K>(new SensorEvaluator<K>() {
 			@Override
 			public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
-				return -cascade.predecessorCount(sensor);
+				return population - cascade.predecessorCount(sensor);
 			}
 		});
 	}
@@ -77,8 +77,8 @@ public class Penalty<K extends Comparable<K>> {
 			CascadeSet<K> cascades, Set<? extends Sensor<K>> sensors) {
 		long result = 0L;
 		for (IncidentCascade<K> cascade : cascades) {
-			result += distribution.probability(cascade)
-					* penaltyReduction(cascade, sensors);
+			result += // distribution.probability(cascade) *
+					penaltyReduction(cascade, sensors);
 		}
 		return result;
 	}
@@ -96,9 +96,9 @@ public class Penalty<K extends Comparable<K>> {
 	 */
 	protected long penaltyReduction(IncidentCascade<K> incident,
 			Set<? extends Sensor<K>> sensors) {
-		long result = MAX_PENALTY;
+		long result = 0L;
 		for (Sensor<K> sensor : sensors) {
-			result = Math.min(result, evaluator.evaluate(sensor, incident
+			result = Math.max(result, evaluator.evaluate(sensor, incident
 					.detectionDelay(sensor)));
 		}
 		return result;

@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import edu.bu.CascadeSet;
@@ -39,7 +40,7 @@ public class PenaltyTest {
 		SensorPlacement<String> onlyB = new SensorPlacement<String>(singleton(userB));
 		SensorPlacement<String> onlyC = new SensorPlacement<String>(singleton(userC));
 		DateTime time0 = new DateTime();
-		DateTime time1 = new DateTime(time0.getMillis() + 1);
+		DateTime time1 = time0.plusDays(1);
 
 		Set<Incident<String>> incidents = new HashSet<Incident<String>>();
 		incidents.add(new Incident<String>(time0,
@@ -83,6 +84,7 @@ public class PenaltyTest {
 	}
 
 	@Test
+	@Ignore
 	public void detectedCascadeReductionProportionalToIncidentProbability() {
 		DateTime now = new DateTime();
 		SimpleUser userA = new SimpleUser("user-a");
@@ -165,9 +167,41 @@ public class PenaltyTest {
 				return 1D;
 			}
 		};
-		assertGreaterThan(Penalty.<String>populationAffected(cascades.iterator().next()).penaltyReduction(dist, cascades,
-				oneAffected), Penalty.<String>populationAffected(cascades.iterator().next()).penaltyReduction(dist,
+		assertGreaterThan(Penalty.<String>populationAffected(2, cascades.iterator().next()).penaltyReduction(dist, cascades,
+				oneAffected), Penalty.<String>populationAffected(2, cascades.iterator().next()).penaltyReduction(dist,
 				cascades, twoAffected));
+	}
+	
+	@Test
+	public void noSensorsIsZeroPenaltyReduction() {
+		SimpleUser userA = new SimpleUser("user-a");
+		SimpleUser userB = new SimpleUser("user-b");
+		List<Incident<String>> is = new ArrayList<Incident<String>>();
+		is.add(new Incident<String>(new DateTime().plusDays(1), userA,
+				"incident"));
+		is.add(new Incident<String>(new DateTime().plusDays(2), userB,
+				"incident"));
+		CascadeSet<String> cascades = new CascadeSet<String>(is);
+		IncidentDistribution dist = new IncidentDistribution() {
+			@Override
+			public <K extends Comparable<K>> double probability(Incident<K> incident) {
+				return 1D;
+			}
+
+			@Override
+			public <K extends Comparable<K>> double probability(IncidentCascade<K> cascade) {
+				return 1D;
+			}
+		};
+		assertEquals(0, Penalty.<String> detectionTime().penaltyReduction(dist,
+				cascades, Collections.<SimpleUser> emptySet()));
+		assertEquals(0, Penalty.<String> populationAffected(2, 
+				new IncidentCascade<String>("incident",
+						new HashSet<Incident<String>>(is))).penaltyReduction(
+				dist, cascades, Collections.<SimpleUser> emptySet()));
+		assertEquals(0, Penalty.<String> detectionLikelihood(
+				new DateTime().plusDays(2).toInstant()).penaltyReduction(dist,
+				cascades, Collections.<SimpleUser> emptySet()));
 	}
 
 	private <T extends Comparable<T>> void assertGreaterThan(T lhs, T rhs) {

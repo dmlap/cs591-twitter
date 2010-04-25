@@ -3,6 +3,7 @@ package edu.bu;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -88,6 +89,18 @@ public class GreedySensorSelectorTest {
 					}
 				}, Penalty.<String>detectionTime(), certitude).select(1, allSensors,
 				singleCascade));
+	}
+	
+	@Test
+	public void initializesBenefitCalculations() {
+		ArrayList<Incident<String>> incidents = new ArrayList<Incident<String>>();
+		incidents.add(new Incident<String>(new DateTime(), userB, "i"));
+		incidents.add(new Incident<String>(new DateTime().plusDays(1), userA, "i"));
+		CascadeSet<String> cascade = new CascadeSet<String>(incidents);
+		assertEquals(Collections.singleton(userB),
+				new GreedySensorSelector<String>(unitCost, Penalty
+						.<String> detectionTime(), certitude).select(1,
+						allSensors, cascade));
 	}
 
 }

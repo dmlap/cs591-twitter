@@ -3,6 +3,7 @@
  */
 package edu.bu.celf;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.NavigableSet;
@@ -20,18 +21,17 @@ import edu.bu.Sensor;
  * 
  */
 public class GreedySensorSelector<K extends Comparable<K>> implements SensorSelector<K> {
-	private static final Long MIN_BENEFIT = Long.MIN_VALUE;
 	private static final <K extends Comparable<K>, S extends Sensor<K>> Comparator<Pair<S, Long>> benefit() {
 		return new Comparator<Pair<S, Long>>() {
 			@Override
-			public int compare(Pair<S, Long> o1, Pair<S, Long> o2) {
-				if (o1.first.equals(o2.first)) {
+			public int compare(Pair<S, Long> lhs, Pair<S, Long> rhs) {
+				if (lhs.first.equals(rhs.first)) {
 					return 0;
 				}
-				if(o1.second.equals(o2.second)) {
-					return o1.first.getId().compareTo(o2.first.getId());
+				if(lhs.second.equals(rhs.second)) {
+					return -lhs.first.getId().compareTo(rhs.first.getId());
 				}
-				return o1.second.compareTo(o2.second);
+				return -lhs.second.compareTo(rhs.second);
 			}
 		};
 	}
@@ -57,8 +57,9 @@ public class GreedySensorSelector<K extends Comparable<K>> implements SensorSele
 				GreedySensorSelector.<K, S>benefit());
 		final Set<S> selected = new HashSet<S>(budget);
 		// initialize benefits cache
-		for(S sensor : sensors) {
-			benefits.add(new Pair<S, Long>(sensor, MIN_BENEFIT));
+		for (S sensor : sensors) {
+			benefits.add(new Pair<S, Long>(sensor, penalty.penaltyReduction(
+					distribution, cascades, Collections.singleton(sensor))));
 		}
 		OUTER: while(budget > 0) {
 			while(!benefits.isEmpty()) {
@@ -71,7 +72,7 @@ public class GreedySensorSelector<K extends Comparable<K>> implements SensorSele
 				}
 				selected.add(benefit.first);
 				long update = penalty.penaltyReduction(distribution, cascades, selected);
-				if(benefits.isEmpty() || update > benefits.first().second) {
+				if(benefits.isEmpty() || update >= benefits.first().second) {
 					// found the best possible sensor for this iteration
 					budget -= cost; 
 					continue OUTER;
