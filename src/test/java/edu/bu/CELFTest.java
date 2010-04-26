@@ -47,7 +47,7 @@ public class CELFTest {
 		final Set<Incident<Long>> incidents = htis.getAllIncidents();
 		GreedySensorSelector<Long> celf = new GreedySensorSelector<Long>(
 				new FixedCostAppraiser<Long>(1), Penalty
-						.<Long> detectionTime(),
+						.<Long> detectionTime(Long.MAX_VALUE),
 				new IncidentDistribution() {
 					@Override
 					public <K extends Comparable<K>> double probability(
@@ -73,7 +73,7 @@ public class CELFTest {
 		final Set<Incident<Long>> incidents = htis.getAllIncidents();
 		GreedySensorSelector<Long> celf = new GreedySensorSelector<Long>(
 				new FixedCostAppraiser<Long>(1), Penalty
-						.<Long> detectionTime(),
+						.<Long> detectionTime(Long.MAX_VALUE),
 				new IncidentDistribution() {
 					@Override
 					public <K extends Comparable<K>> double probability(

@@ -48,7 +48,7 @@ public class GreedySensorSelectorTest {
 	@Test
 	public void selectsHighestValueSensor() {
 		Set<Sensor<String>> selection = new GreedySensorSelector<String>(unitCost,
-				Penalty.<String>detectionTime(), certitude).select(1, allSensors,
+				Penalty.<String>detectionTime(Long.MAX_VALUE), certitude).select(1, allSensors,
 				singleCascade);
 
 		assertEquals(1, selection.size());
@@ -58,21 +58,21 @@ public class GreedySensorSelectorTest {
 	@Test
 	public void selectsNoSensorsWithInsufficientBudget() {
 		assertEquals(0, new GreedySensorSelector<String>(unitCost,
-				Penalty.<String>detectionTime(), certitude).select(0, allSensors,
+				Penalty.<String>detectionTime(Long.MAX_VALUE), certitude).select(0, allSensors,
 				singleCascade).size());
 	}
 
 	@Test
 	public void selectsAllSensorsWithSufficientBudget() {
 		assertEquals(allSensors, new GreedySensorSelector<String>(unitCost,
-				Penalty.<String>detectionTime(), certitude).select(allSensors.size(),
+				Penalty.<String>detectionTime(Long.MAX_VALUE), certitude).select(allSensors.size(),
 				allSensors, singleCascade));
 	}
 	
 	@Test
 	public void selectsWithinBudget() {
 		assertEquals(Collections.singleton(userA), new GreedySensorSelector<String>(
-				doubleCost, Penalty.<String>detectionTime(), certitude).select(3,
+				doubleCost, Penalty.<String>detectionTime(Long.MAX_VALUE), certitude).select(3,
 				allSensors, singleCascade));
 	}
 	
@@ -87,7 +87,7 @@ public class GreedySensorSelectorTest {
 						}
 						return 1;
 					}
-				}, Penalty.<String>detectionTime(), certitude).select(1, allSensors,
+				}, Penalty.<String>detectionTime(Long.MAX_VALUE), certitude).select(1, allSensors,
 				singleCascade));
 	}
 	
@@ -99,7 +99,7 @@ public class GreedySensorSelectorTest {
 		CascadeSet<String> cascade = new CascadeSet<String>(incidents);
 		assertEquals(Collections.singleton(userB),
 				new GreedySensorSelector<String>(unitCost, Penalty
-						.<String> detectionTime(), certitude).select(1,
+						.<String> detectionTime(Long.MAX_VALUE), certitude).select(1,
 						allSensors, cascade));
 	}
 

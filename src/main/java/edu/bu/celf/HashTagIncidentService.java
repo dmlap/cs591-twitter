@@ -35,7 +35,8 @@ public class HashTagIncidentService {
 			@Override
 			public Set<Incident<Long>> run(Session session) {
 				HashSet<Incident<Long>> results = new HashSet<Incident<Long>>();
-				List list = session.createCriteria(Hash.class, "hash")
+				@SuppressWarnings("unchecked")
+				List<Object[]> list = session.createCriteria(Hash.class, "hash")
 					.createCriteria("statuses", "status")
 							.setProjection(Projections.projectionList()
 									.add(Projections.property("status.statusDate"))
@@ -45,7 +46,9 @@ public class HashTagIncidentService {
 				Iterator<Object[]> itr = list.iterator();
 				while(itr.hasNext()) {
 					Object[] incident = itr.next();
-					results.add(new Incident<Long>((DateTime) incident[0], (Sensor<Long>) incident[1], (String) incident[2]));
+					@SuppressWarnings("unchecked")
+					Sensor<Long> sensor = (Sensor<Long>) incident[1];
+					results.add(new Incident<Long>((DateTime) incident[0], sensor, (String) incident[2]));
 				}
 				return results;
 			}

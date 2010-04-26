@@ -29,7 +29,7 @@ public class GreedySensorSelector<K extends Comparable<K>> implements SensorSele
 					return 0;
 				}
 				if(lhs.second.equals(rhs.second)) {
-					return -lhs.first.getId().compareTo(rhs.first.getId());
+					return lhs.first.getId().compareTo(rhs.first.getId());
 				}
 				return -lhs.second.compareTo(rhs.second);
 			}

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -27,7 +28,7 @@ public class PenaltyTest {
 		Incident<String> incident = new Incident<String>(new DateTime(), new SimpleUser(
 				"user-a"), "undetected-incident");
 		SensorPlacement<String> sensors = new SensorPlacement<String>(singleton(new SimpleUser("user-b")));
-		assertEquals(0, Penalty.<String>detectionTime().penaltyReduction(IncidentCascade
+		assertEquals(0, Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(IncidentCascade
 				.singleton(incident), sensors));
 	}
 
@@ -48,9 +49,9 @@ public class PenaltyTest {
 		incidents.add(new Incident<String>(time1, userB, "id"));
 		IncidentCascade<String> cascade = new IncidentCascade<String>("id", incidents);
 
-		long atTime0 = Penalty.<String>detectionTime().penaltyReduction(cascade, onlyA);
-		long atTime1 = Penalty.<String>detectionTime().penaltyReduction(cascade, onlyB);
-		long atNever = Penalty.<String>detectionTime().penaltyReduction(cascade, onlyC);
+		long atTime0 = Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(cascade, onlyA);
+		long atTime1 = Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(cascade, onlyB);
+		long atNever = Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(cascade, onlyC);
 
 		assertTrue(
 				"Penalty reduction for detecting at time 0 should be greater than detection at time 1.  Time 0: "
@@ -79,7 +80,7 @@ public class PenaltyTest {
 				return 1.0D;
 			}
 		};
-		assertEquals(0, Penalty.<String>detectionTime().penaltyReduction(dist, incidents,
+		assertEquals(0, Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(dist, incidents,
 				sensors));
 	}
 
@@ -110,8 +111,8 @@ public class PenaltyTest {
 				return 0.1D;
 			}
 		};
-		assertGreaterThan(Penalty.<String>detectionTime().penaltyReduction(dist, highlyProbable,
-				sensors), Penalty.<String>detectionTime().penaltyReduction(dist, highlyUnlikely,
+		assertGreaterThan(Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(dist, highlyProbable,
+				sensors), Penalty.<String>detectionTime(Long.MAX_VALUE).penaltyReduction(dist, highlyUnlikely,
 				sensors));
 	}
 
@@ -193,7 +194,7 @@ public class PenaltyTest {
 				return 1D;
 			}
 		};
-		assertEquals(0, Penalty.<String> detectionTime().penaltyReduction(dist,
+		assertEquals(0, Penalty.<String> detectionTime(Long.MAX_VALUE).penaltyReduction(dist,
 				cascades, Collections.<SimpleUser> emptySet()));
 		assertEquals(0, Penalty.<String> populationAffected(2, 
 				new IncidentCascade<String>("incident",
@@ -202,6 +203,52 @@ public class PenaltyTest {
 		assertEquals(0, Penalty.<String> detectionLikelihood(
 				new DateTime().plusDays(2).toInstant()).penaltyReduction(dist,
 				cascades, Collections.<SimpleUser> emptySet()));
+	}
+	
+	@Test
+	public void multipleCascadesPenaltyReduction() {
+		SimpleUser userA = new SimpleUser("user-a");
+		SimpleUser userB = new SimpleUser("user-b");
+		SimpleUser userC = new SimpleUser("user-c");
+		SimpleUser userD = new SimpleUser("user-d");
+		List<Incident<String>> incidents = new ArrayList<Incident<String>>();
+		incidents.add(new Incident<String>(new DateTime(), userA, "i0"));
+		incidents.add(new Incident<String>(new DateTime().plus(1L), userB, "i0"));
+		incidents.add(new Incident<String>(new DateTime(), userC, "i1"));
+		incidents.add(new Incident<String>(new DateTime().plus(1L), userD, "i1"));
+		CascadeSet<String> cascades = new CascadeSet<String>(incidents);
+		IncidentDistribution distribution = new IncidentDistribution() {
+			@Override
+			public <K extends Comparable<K>> double probability(
+					IncidentCascade<K> cascade) {
+				return 1D;
+			}
+			@Override
+			public <K extends Comparable<K>> double probability(Incident<K> incident) {
+				return 1D;
+			}
+		};
+		long maxValue = 10000L;
+
+		long noSensorsBenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
+				distribution, cascades, Collections.<SimpleUser> emptySet());
+		assertEquals(0, noSensorsBenefit);
+		long withBBenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
+				distribution, cascades, Collections.singleton(userB));
+		assertGreaterThan(withBBenefit, noSensorsBenefit);
+		long withABenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
+				distribution, cascades, Collections.singleton(userA));
+		assertGreaterThan(withABenefit, withBBenefit);
+		
+		long withABBenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
+				distribution, cascades, new HashSet<SimpleUser>(Arrays.asList(userA, userB)));
+		assertEquals(withABenefit, withABBenefit);
+		long withACBenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
+				distribution, cascades, new HashSet<SimpleUser>(Arrays.asList(userA, userC)));
+		assertGreaterThan(withACBenefit, withABenefit);
+		long withADBenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
+				distribution, cascades, new HashSet<SimpleUser>(Arrays.asList(userA, userD)));
+		assertGreaterThan(withACBenefit, withADBenefit);
 	}
 
 	private <T extends Comparable<T>> void assertGreaterThan(T lhs, T rhs) {

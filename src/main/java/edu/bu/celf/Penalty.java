@@ -20,13 +20,11 @@ import edu.bu.Sensor;
  * 
  */
 public class Penalty<K extends Comparable<K>> {
-	public static final long MAX_PENALTY = Long.MAX_VALUE;
-	public static final <K extends Comparable<K>> Penalty<K> detectionTime() {
-		return new Penalty<K>(
-			new SensorEvaluator<K>() {
+	public static final <K extends Comparable<K>> Penalty<K> detectionTime(final long maxValue) {
+		return new Penalty<K>(new SensorEvaluator<K>() {
 				@Override
 				public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
-					return MAX_PENALTY
+					return maxValue
 							- detectionInterval.toDurationMillis();
 				}
 			});

@@ -6,6 +6,8 @@ package edu.bu;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import edu.bu.celf.FixedCostAppraiser;
 import edu.bu.celf.GreedySensorSelector;
 import edu.bu.celf.HashTagIncidentService;
@@ -39,8 +41,9 @@ public class RunCelf {
 		HashTagIncidentService htis = new HashTagIncidentService();
 		final Set<Incident<Long>> incidents = htis.getAllIncidents();
 		GreedySensorSelector<Long> celf = new GreedySensorSelector<Long>(
-				new FixedCostAppraiser<Long>(1),
-				Penalty.<Long> detectionTime(), new IncidentDistribution() {
+				new FixedCostAppraiser<Long>(1), Penalty
+						.<Long> detectionTime(new DateTime().minusYears(1)
+								.getMillis()), new IncidentDistribution() {
 					@Override
 					public <K extends Comparable<K>> double probability(
 							IncidentCascade<K> cascade) {
