@@ -19,6 +19,7 @@ import org.junit.Test;
 import edu.bu.CascadeSet;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
+import edu.bu.Pair;
 import edu.bu.SimpleUser;
 
 public class PenaltyTest {
@@ -249,6 +250,36 @@ public class PenaltyTest {
 		long withADBenefit = Penalty.<String> detectionTime(maxValue).penaltyReduction(
 				distribution, cascades, new HashSet<SimpleUser>(Arrays.asList(userA, userD)));
 		assertGreaterThan(withACBenefit, withADBenefit);
+	}
+	
+	@Test
+	public void compoundPenalty() {
+		SimpleUser user = new SimpleUser("a");
+		IncidentDistribution distribution = new IncidentDistribution() {
+
+			@Override
+			public <K extends Comparable<K>> double probability(
+					IncidentCascade<K> cascade) {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+
+			@Override
+			public <K extends Comparable<K>> double probability(
+					Incident<K> incident) {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+		};
+		CascadeSet<String> cascades = new CascadeSet<String>(Collections.singleton(new Incident<String>(new DateTime(), user, "i")));
+		List<Pair<Double, Penalty<String>>> penalties = new ArrayList<Pair<Double,Penalty<String>>>();
+		penalties.add(new Pair<Double, Penalty<String>>(1D, Penalty
+				.populationAffected(1, cascades.iterator().next())));
+		penalties.add(new Pair<Double, Penalty<String>>(1D, Penalty
+				.<String> detectionTime(1L)));
+		Penalty<String> penalty = Penalty.<String> compose(penalties);
+
+		assertEquals(2, penalty.penaltyReduction(distribution, cascades, Collections.singleton(user)));
 	}
 
 	private <T extends Comparable<T>> void assertGreaterThan(T lhs, T rhs) {

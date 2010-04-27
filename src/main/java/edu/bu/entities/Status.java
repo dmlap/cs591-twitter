@@ -41,7 +41,7 @@ public class Status {
 	}
 	
 	@ManyToOne(cascade = CascadeType.REMOVE)
-	@JoinColumn(name="userid")
+	@JoinColumn(name="user_id")
 	public User getUser() {
 		return user;
 	}

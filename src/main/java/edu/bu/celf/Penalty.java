@@ -3,6 +3,8 @@
  */
 package edu.bu.celf;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.joda.time.Instant;
@@ -11,6 +13,7 @@ import org.joda.time.Interval;
 import edu.bu.CascadeSet;
 import edu.bu.Incident;
 import edu.bu.IncidentCascade;
+import edu.bu.Pair;
 import edu.bu.Sensor;
 
 /**
@@ -100,6 +103,31 @@ public class Penalty<K extends Comparable<K>> {
 					.detectionDelay(sensor)));
 		}
 		return result;
+	}
+
+	/**
+	 * Constructs a new {@link Penalty} by adding together the supplied
+	 * penalties with an associated scaling factor.
+	 * @param penalties
+	 *            - the {@link Pair}s of scaling factors and {@link Penalty
+	 *            penalties} to accumulate.
+	 * 
+	 * @return a new {@link Penalty}
+	 */
+	public static <K extends Comparable<K>> Penalty<K> compose(
+			final List<Pair<Double, Penalty<K>>> penalties) {
+		return new Penalty<K>(new SensorEvaluator<K>() {
+			@Override
+			public long evaluate(Sensor<K> sensor, Interval detectionInterval) {
+				long result = 0;
+				for (Pair<Double, Penalty<K>> pair : penalties) {
+					result += pair.first
+							* pair.second.evaluator.evaluate(sensor,
+									detectionInterval);
+				}
+				return result;
+			}
+		});
 	}
 
 }
